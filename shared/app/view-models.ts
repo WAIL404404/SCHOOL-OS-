@@ -4,6 +4,8 @@ import type {
   AcademicAttendanceBadgeView,
   AcademicCalendarLinkView,
   AcademicGradeChartPointView,
+  AcademicHomeworkCalendarDayView,
+  AcademicHomeworkCalendarItemView,
   AcademicHomeworkRecord,
   AcademicScheduleDayView,
   ChildRecord,
@@ -215,6 +217,33 @@ function summarizeHomework(items: AcademicHomeworkRecord[]) {
   }
 }
 
+function buildHomeworkCalendar(items: AcademicHomeworkRecord[]): AcademicHomeworkCalendarDayView[] {
+  const grouped = new Map<string, AcademicHomeworkCalendarItemView[]>()
+
+  for (const item of items) {
+    const date = new Date(item.dueAt)
+    if (Number.isNaN(date.getTime())) continue
+    const dayKey = date.toISOString().slice(0, 10)
+    const existing = grouped.get(dayKey) ?? []
+    existing.push({
+      id: item.id,
+      title: item.title,
+      subject: item.subject,
+      dueAt: item.dueAt,
+      status: item.status
+    })
+    grouped.set(dayKey, existing)
+  }
+
+  return Array.from(grouped.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([dayKey, dayItems]) => ({
+      dayKey,
+      dayLabel: new Date(`${dayKey}T08:00:00`).toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' }),
+      items: dayItems.sort((left, right) => new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime())
+    }))
+}
+
 export function buildParentDashboardView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentDashboardView {
   const parent = account?.role === 'parent' ? account as ParentAccount : null
   const summary = parent?.dashboardSummary
@@ -313,7 +342,8 @@ export function buildParentAcademicsView(account: SeedUser | null, selectedChild
     homework: {
       items: homeworkItems,
       summary: homeworkSummary,
-      parentAlerts: homeworkItems.map((item) => item.parentNotification).filter((value): value is string => Boolean(value))
+      parentAlerts: homeworkItems.map((item) => item.parentNotification).filter((value): value is string => Boolean(value)),
+      calendarDays: buildHomeworkCalendar(homeworkItems)
     },
     exams: {
       items: academics?.exams ?? [],

@@ -416,6 +416,38 @@ export interface AcademicHomeworkSummaryView {
   late: number
 }
 
+export interface AcademicHomeworkCalendarItemView {
+  id: string
+  title: string
+  subject: string
+  dueAt: string
+  status: 'submitted' | 'pending' | 'late'
+}
+
+export interface AcademicHomeworkCalendarDayView {
+  dayKey: string
+  dayLabel: string
+  items: AcademicHomeworkCalendarItemView[]
+}
+
+export interface AcademicAbsenceReasonRecord {
+  id: string
+  childId: string
+  reason: string
+  createdAt: string
+  status: 'submitted' | 'reviewing'
+}
+
+export interface AcademicRealtimeNotificationView {
+  id: string
+  childId: string
+  title: string
+  detail: string
+  tone: 'warning' | 'info' | 'calm'
+  source: 'schedule' | 'homework' | 'exam' | 'attendance' | 'absence' | 'hook'
+  createdAt: string
+}
+
 export interface AcademicAttendanceBadgeView {
   label: string
   tone: 'success' | 'danger' | 'warning' | 'neutral'
@@ -453,6 +485,7 @@ export interface ParentAcademicsView {
     items: AcademicHomeworkRecord[]
     summary: AcademicHomeworkSummaryView
     parentAlerts: string[]
+    calendarDays: AcademicHomeworkCalendarDayView[]
   }
   exams: {
     items: AcademicExamRecord[]

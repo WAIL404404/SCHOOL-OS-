@@ -1353,11 +1353,52 @@ input {
   padding: 18px;
 }
 
+.homework-calendar {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(32, 53, 74, 0.08);
+}
+
+.homework-calendar-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.homework-calendar-day {
+  padding: 16px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.homework-calendar-day__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.homework-calendar-day__header h4 {
+  margin: 0;
+  font-family: var(--heading-font);
+}
+
+.homework-calendar-item {
+  padding: 14px;
+}
+
+.homework-calendar-item small {
+  color: var(--text-muted);
+}
+
 @media (max-width: 1200px) {
   .stat-grid--four,
   .stat-grid--two,
   .schedule-week-grid,
-  .subject-grid {
+  .subject-grid,
+  .homework-calendar-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { motion } from 'motion-v'
-import type { ParentAcademicsView } from '~/shared/app/types'
+import type { AcademicRealtimeNotificationView, ParentAcademicsView } from '~/shared/app/types'
 
 const props = defineProps<{
   viewModel: ParentAcademicsView
@@ -15,6 +15,10 @@ const selectedDayId = ref('')
 const absenceReason = ref('')
 const absenceFeedback = ref('')
 const absenceFeedbackTone = ref<'success' | 'error'>('success')
+const liveNotifications = ref<AcademicRealtimeNotificationView[]>([])
+const liveNotificationsLoading = ref(false)
+const liveNotificationsError = ref('')
+let liveStream: EventSource | null = null
 
 watch(
   () => props.viewModel.schedule.days,
@@ -30,8 +34,23 @@ watch(
     absenceReason.value = ''
     absenceFeedback.value = ''
     absenceFeedbackTone.value = 'success'
+    liveNotificationsError.value = ''
   }
 )
+
+watch(
+  () => props.viewModel.activeChildId,
+  (childId) => {
+    if (!import.meta.client) return
+    void refreshLiveNotifications(childId)
+    connectLiveStream(childId)
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  disconnectLiveStream()
+})
 
 const activeDay = computed(() => props.viewModel.schedule.days.find((day) => day.dayId === selectedDayId.value) ?? props.viewModel.schedule.days[0] ?? null)
 
@@ -57,6 +76,12 @@ function statusLabel(status: 'submitted' | 'pending' | 'late') {
   return 'Pending'
 }
 
+function statusPillClass(status: 'submitted' | 'pending' | 'late') {
+  if (status === 'late') return 'status-pill status-pill--alert'
+  if (status === 'pending') return 'status-pill status-pill--warning'
+  return 'status-pill status-pill--neutral'
+}
+
 function attendanceHistoryLabel(status: 'present' | 'absent' | 'late') {
   if (status === 'absent') return 'Absent'
   if (status === 'late') return 'Late'
@@ -69,7 +94,72 @@ function attendanceHistoryClass(status: 'present' | 'absent' | 'late') {
   return 'status-pill'
 }
 
-function submitAbsenceReason() {
+function upsertLiveNotification(item: AcademicRealtimeNotificationView) {
+  const next = [item, ...liveNotifications.value.filter((existing) => existing.id !== item.id)]
+  next.sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+  liveNotifications.value = next.slice(0, 16)
+}
+
+function disconnectLiveStream() {
+  if (liveStream) {
+    liveStream.close()
+    liveStream = null
+  }
+}
+
+function connectLiveStream(childId: string | null) {
+  disconnectLiveStream()
+  if (!childId) return
+
+  const streamUrl = `/api/parent/academics/stream?child=${encodeURIComponent(childId)}`
+  const eventSource = new EventSource(streamUrl)
+  liveStream = eventSource
+
+  eventSource.addEventListener('snapshot', (rawEvent) => {
+    try {
+      const payload = JSON.parse((rawEvent as MessageEvent).data) as { items?: AcademicRealtimeNotificationView[] }
+      liveNotifications.value = (payload.items ?? []).slice(0, 16)
+      liveNotificationsError.value = ''
+    } catch {
+      liveNotificationsError.value = 'Live stream payload could not be parsed.'
+    }
+  })
+
+  eventSource.addEventListener('notification', (rawEvent) => {
+    try {
+      const payload = JSON.parse((rawEvent as MessageEvent).data) as { item?: AcademicRealtimeNotificationView }
+      if (payload.item) upsertLiveNotification(payload.item)
+    } catch {
+      liveNotificationsError.value = 'A live notification update failed to load.'
+    }
+  })
+
+  eventSource.onerror = () => {
+    liveNotificationsError.value = 'Live updates disconnected. Reloading the feed can restore it.'
+  }
+}
+
+async function refreshLiveNotifications(childId: string | null) {
+  if (!childId) {
+    liveNotifications.value = []
+    return
+  }
+
+  liveNotificationsLoading.value = true
+  liveNotificationsError.value = ''
+  try {
+    const payload = await $fetch<{ items: AcademicRealtimeNotificationView[] }>('/api/parent/academics/notifications', {
+      query: { child: childId }
+    })
+    liveNotifications.value = payload.items.slice(0, 16)
+  } catch {
+    liveNotificationsError.value = 'Could not load the notification feed right now.'
+  } finally {
+    liveNotificationsLoading.value = false
+  }
+}
+
+async function submitAbsenceReason() {
   const reason = absenceReason.value.trim()
   if (!reason) {
     absenceFeedbackTone.value = 'error'
@@ -77,9 +167,33 @@ function submitAbsenceReason() {
     return
   }
 
-  absenceFeedbackTone.value = 'success'
-  absenceFeedback.value = `Reason submitted for ${props.viewModel.activeChild?.fullName ?? 'your child'}. The school office will review it alongside attendance history.`
-  absenceReason.value = ''
+  const childId = props.viewModel.activeChildId
+  if (!childId) {
+    absenceFeedbackTone.value = 'error'
+    absenceFeedback.value = 'No linked child is selected for this note.'
+    return
+  }
+
+  try {
+    const response = await $fetch<{
+      note: { createdAt: string }
+      notification?: AcademicRealtimeNotificationView
+    }>('/api/parent/attendance-reasons', {
+      method: 'POST',
+      body: { childId, reason }
+    })
+
+    if (response.notification) {
+      upsertLiveNotification(response.notification)
+    }
+
+    absenceFeedbackTone.value = 'success'
+    absenceFeedback.value = `Reason submitted for ${props.viewModel.activeChild?.fullName ?? 'your child'} at ${formatTimestamp(response.note.createdAt)}. The school office will review it alongside attendance history.`
+    absenceReason.value = ''
+  } catch {
+    absenceFeedbackTone.value = 'error'
+    absenceFeedback.value = 'Reason could not be submitted. Please try again.'
+  }
 }
 </script>
 
@@ -235,6 +349,25 @@ function submitAbsenceReason() {
           </article>
         </div>
 
+        <div class="section-copy section-copy--tight">
+          <p class="eyebrow">Live feed</p>
+          <h3>Realtime notifications</h3>
+          <p>Hooks for class reminders, attendance alerts, homework deadlines, and submitted parent notes appear here.</p>
+        </div>
+        <p v-if="liveNotificationsLoading && !liveNotifications.length" class="module-note">Loading live notifications...</p>
+        <p v-else-if="liveNotificationsError" class="form-message form-message--error">{{ liveNotificationsError }}</p>
+        <div v-else-if="liveNotifications.length" class="stack stack--compact">
+          <article v-for="notification in liveNotifications" :key="notification.id" class="alert-item" :class="`alert-item--${notification.tone}`">
+            <div class="alert-item__icon">{{ notification.tone === 'warning' ? '!' : notification.tone === 'info' ? 'i' : '•' }}</div>
+            <div>
+              <h3>{{ notification.title }}</h3>
+              <p>{{ notification.detail }}</p>
+              <small>{{ formatTimestamp(notification.createdAt) }} · {{ notification.source }}</small>
+            </div>
+          </article>
+        </div>
+        <p v-else class="module-note">No live notifications yet for this child.</p>
+
         <div v-if="props.viewModel.schedule.examDayLabels.length" class="pill-row">
           <span v-for="day in props.viewModel.schedule.examDayLabels" :key="day" class="status-pill status-pill--warning">{{ day }}</span>
         </div>
@@ -346,7 +479,7 @@ function submitAbsenceReason() {
                 <h3>{{ item.title }}</h3>
                 <p>{{ item.subject }} · Due {{ formatTimestamp(item.dueAt) }}</p>
               </div>
-              <span class="status-pill" :class="{ 'status-pill--warning': item.status === 'pending', 'status-pill--alert': item.status === 'late', 'status-pill--neutral': item.status === 'submitted' }">{{ statusLabel(item.status) }}</span>
+              <span :class="statusPillClass(item.status)">{{ statusLabel(item.status) }}</span>
             </div>
             <div class="pill-row">
               <a v-for="asset in item.attachments" :key="asset.label" class="asset-pill" :href="asset.url" :target="asset.kind === 'link' ? '_blank' : undefined" :rel="asset.kind === 'link' ? 'noreferrer' : undefined">{{ asset.kind.toUpperCase() }} · {{ asset.label }}</a>
@@ -354,6 +487,35 @@ function submitAbsenceReason() {
             <p v-if="item.feedback">{{ item.feedback }}</p>
             <small v-if="item.submittedAt">Submitted {{ formatTimestamp(item.submittedAt) }}</small>
           </article>
+        </div>
+
+        <div class="homework-calendar">
+          <div class="section-copy section-copy--tight">
+            <p class="eyebrow">Homework calendar</p>
+            <h3>Deadline view by day</h3>
+            <p>All assignment due dates are grouped in calendar order for quick planning.</p>
+          </div>
+          <div v-if="props.viewModel.homework.calendarDays.length" class="homework-calendar-grid">
+            <article v-for="day in props.viewModel.homework.calendarDays" :key="day.dayKey" class="homework-calendar-day">
+              <div class="homework-calendar-day__header">
+                <h4>{{ day.dayLabel }}</h4>
+                <span class="status-pill status-pill--neutral">{{ day.items.length }} due</span>
+              </div>
+              <div class="stack stack--compact">
+                <article v-for="item in day.items" :key="item.id" class="list-card homework-calendar-item">
+                  <div class="list-card__header">
+                    <div>
+                      <h3>{{ item.subject }}</h3>
+                      <p>{{ item.title }}</p>
+                    </div>
+                    <span :class="statusPillClass(item.status)">{{ statusLabel(item.status) }}</span>
+                  </div>
+                  <small>Due {{ formatTimestamp(item.dueAt) }}</small>
+                </article>
+              </div>
+            </article>
+          </div>
+          <p v-else class="module-note">No homework deadlines are scheduled yet.</p>
         </div>
       </section>
 
