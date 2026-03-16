@@ -1,4 +1,5 @@
 ﻿import { quickActionModules, ROLE_LABELS, schoolBrand } from './data.ts'
+import { childActivitiesById } from './activities.ts'
 import { childContractsById } from './contracts.ts'
 import { childFinanceById } from './finance.ts'
 import { listDevicesForAccount } from './session.ts'
@@ -10,11 +11,13 @@ import type {
   AcademicHomeworkCalendarItemView,
   AcademicHomeworkRecord,
   AcademicScheduleDayView,
+  ActivityBookingRecord,
   ChildRecord,
   ContractSignatureLogRecord,
   FinancialRequestRecord,
   ParentAcademicsView,
   ParentAccount,
+  ParentActivitiesView,
   ParentContractsView,
   ParentDashboardView,
   ParentFinancialView,
@@ -530,6 +533,77 @@ export function buildParentContractsView(account: SeedUser | null, selectedChild
   }
 }
 
+
+function sortActivityBookings(items: ActivityBookingRecord[]) {
+  return [...items].sort((left, right) => new Date(right.bookedAt).getTime() - new Date(left.bookedAt).getTime())
+}
+
+export function buildParentActivitiesView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentActivitiesView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const activities = activeChild ? childActivitiesById[activeChild.id] ?? null : null
+
+  const catalogItems = activities?.catalog ?? []
+  const categoryOrder: ParentActivitiesView['catalog']['categories'] = ['sports', 'arts', 'tech', 'languages', 'tutoring']
+  const categories = categoryOrder.filter((category) => catalogItems.some((item) => item.category === category))
+
+  const bookings = sortActivityBookings(activities?.bookings ?? [])
+  const waitlistCount = bookings.filter((item) => item.status === 'waitlist').length
+  const confirmedCount = bookings.filter((item) => item.status === 'confirmed').length
+  const trackingItems = activities?.tracking ?? []
+  const weeklyReportCount = trackingItems.reduce((sum, item) => sum + item.weeklyReports.length, 0)
+  const programs = [...(activities?.programs ?? [])].sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
+  const registrations = [...(activities?.programRegistrations ?? [])].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+
+  const totalSpotsRemaining = catalogItems.reduce((sum, item) => sum + item.spotsRemaining, 0)
+  const openPrograms = programs.filter((item) => item.availableSpots > 0).length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && activities
+      ? [
+          { label: 'Catalog activities', value: String(catalogItems.length), detail: `${categories.length} categories available` },
+          { label: 'Confirmed bookings', value: String(confirmedCount), detail: `${waitlistCount} in waitlist` },
+          { label: 'Weekly progress updates', value: String(weeklyReportCount), detail: `${trackingItems.length} tracked activities` },
+          { label: 'Seasonal programs', value: String(openPrograms), detail: `${totalSpotsRemaining} catalog spots remaining` }
+        ]
+      : [
+          { label: 'Catalog activities', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Confirmed bookings', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Weekly progress updates', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Seasonal programs', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    catalog: {
+      items: catalogItems,
+      categories
+    },
+    booking: {
+      bookings,
+      cancellationPolicy: activities?.cancellationPolicy ?? 'Cancellation policy will appear once activities are enabled.',
+      packageDeals: activities?.packageDeals ?? [],
+      trialSessionNote: activities?.trialSessionNote ?? 'Trial session details will appear once activities are enabled.',
+      waitlistCount
+    },
+    tracking: {
+      items: trackingItems
+    },
+    programs: {
+      items: programs,
+      registrations
+    }
+  }
+}
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
   const summary: WorkspaceSummary | undefined = account?.workspaceSummary
   return {
@@ -548,6 +622,8 @@ export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Stora
     priorities: summary?.priorities ?? ['Define the first operational flow for this role.']
   }
 }
+
+
 
 
 

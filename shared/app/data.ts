@@ -69,10 +69,10 @@ export const navigationByRole: Record<(typeof USER_ROLES)[keyof typeof USER_ROLE
     { label: 'Academics', route: APP_ROUTES.academics, description: 'Timetable, grades, homework, exams, attendance' },
     { label: 'Contracts', route: APP_ROUTES.contracts, description: 'Current contract, signatures, re-enrollment, and alerts' },
     { label: 'Fees', route: APP_ROUTES.fees, description: 'Fee structure, payments, and tax documents' },
-    { label: 'Activities', route: APP_ROUTES.activities, description: 'Coming soon' },
+    { label: 'Activities', route: APP_ROUTES.activities, description: 'Catalog, booking, tracking, and seasonal programs' },
     { label: 'Transport', route: APP_ROUTES.transport, description: 'Coming soon' },
     { label: 'Approvals', route: APP_ROUTES.approvals, description: 'Coming soon' },
-    { label: 'After-school', route: APP_ROUTES.afterSchool, description: 'Coming soon' },
+    { label: 'After-school', route: APP_ROUTES.afterSchool, description: 'Included in Activities module' },
     { label: 'Messages', route: APP_ROUTES.messages, description: 'Coming soon' }
   ],
   [USER_ROLES.transportDriver]: [{ label: 'Overview', route: APP_ROUTES.driverOverview, description: 'Assigned routes' }],

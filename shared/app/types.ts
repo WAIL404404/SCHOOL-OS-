@@ -804,6 +804,182 @@ export interface ParentContractsView {
   }
 }
 
+export type ActivityCategory = 'sports' | 'arts' | 'tech' | 'languages' | 'tutoring'
+
+export interface ActivityInstructorRecord {
+  id: string
+  fullName: string
+  title: string
+  bio: string
+  qualifications: string[]
+}
+
+export interface ActivityPriceRecord {
+  perSessionMad: number
+  perMonthMad: number | null
+  perTrimesterMad: number | null
+}
+
+export interface ActivityMediaRecord {
+  id: string
+  kind: 'image' | 'video'
+  label: string
+  url: string
+}
+
+export interface ActivityReviewRecord {
+  id: string
+  parentName: string
+  rating: number
+  comment: string
+  createdAt: string
+}
+
+export interface ActivityCatalogRecord {
+  id: string
+  category: ActivityCategory
+  name: string
+  summary: string
+  instructor: ActivityInstructorRecord
+  scheduleLabel: string
+  location: string
+  price: ActivityPriceRecord
+  spotsTotal: number
+  spotsRemaining: number
+  ageRequirement: string
+  gradeRequirement: string
+  media: ActivityMediaRecord[]
+  reviews: ActivityReviewRecord[]
+  averageRating: number
+}
+
+export interface ActivityPackageDealRecord {
+  id: string
+  label: string
+  detail: string
+  bonus: string
+}
+
+export interface ActivityBookingRecord {
+  id: string
+  childId: string
+  activityId: string
+  activityName: string
+  status: 'confirmed' | 'waitlist' | 'cancelled'
+  bookedAt: string
+  sessionStartsAt: string
+  cancellationDeadline: string
+  paymentMode: 'pay_now' | 'invoice'
+  paymentStatus: 'paid' | 'pending_invoice'
+  packageDealId: string | null
+  trialSession: boolean
+  waitlistPosition: number | null
+  confirmationCode: string | null
+}
+
+export interface ActivityProgressReportRecord {
+  id: string
+  weekLabel: string
+  summary: string
+  skillFocus: string
+  nextStep: string
+}
+
+export interface ActivitySkillAssessmentRecord {
+  id: string
+  skill: string
+  level: 'beginner' | 'developing' | 'proficient' | 'advanced'
+  detail: string
+}
+
+export interface ActivityAttendanceRecord {
+  id: string
+  sessionLabel: string
+  attended: boolean
+  note: string
+}
+
+export interface ActivityTrackingRecord {
+  activityId: string
+  activityName: string
+  weeklyReports: ActivityProgressReportRecord[]
+  sessionMedia: ActivityMediaRecord[]
+  skillAssessment: ActivitySkillAssessmentRecord[]
+  attendance: ActivityAttendanceRecord[]
+  participationCertificateUrl: string
+  showcaseInfo: string
+}
+
+export interface ActivityProgramRecord {
+  id: string
+  kind: 'summer_camp' | 'holiday_workshop'
+  title: string
+  summary: string
+  startsAt: string
+  endsAt: string
+  location: string
+  scheduleLabel: string
+  priceMad: number
+  earlyRegistrationDiscountMad: number | null
+  availableSpots: number
+  ageRequirement: string
+}
+
+export interface ActivityProgramRegistrationRecord {
+  id: string
+  childId: string
+  programId: string
+  status: 'submitted' | 'under_review' | 'confirmed'
+  submittedAt: string
+  updatedAt: string
+  seatCode: string | null
+  discountAppliedMad: number | null
+}
+
+export interface ChildActivitiesRecord {
+  catalog: ActivityCatalogRecord[]
+  bookings: ActivityBookingRecord[]
+  cancellationPolicy: string
+  packageDeals: ActivityPackageDealRecord[]
+  trialSessionNote: string
+  tracking: ActivityTrackingRecord[]
+  programs: ActivityProgramRecord[]
+  programRegistrations: ActivityProgramRegistrationRecord[]
+}
+
+export interface ParentActivitiesView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  catalog: {
+    items: ActivityCatalogRecord[]
+    categories: ActivityCategory[]
+  }
+  booking: {
+    bookings: ActivityBookingRecord[]
+    cancellationPolicy: string
+    packageDeals: ActivityPackageDealRecord[]
+    trialSessionNote: string
+    waitlistCount: number
+  }
+  tracking: {
+    items: ActivityTrackingRecord[]
+  }
+  programs: {
+    items: ActivityProgramRecord[]
+    registrations: ActivityProgramRegistrationRecord[]
+  }
+}
+
 export interface RoleWorkspaceView {
   role: UserRole
   roleLabel: string
