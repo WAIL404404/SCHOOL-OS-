@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict'
 import { APP_ROUTES, seedParentAccounts, seedUsers } from '../shared/app/data.ts'
-import { buildParentAcademicsView, buildParentDashboardView } from '../shared/app/view-models.ts'
+import { buildParentAcademicsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView } from '../shared/app/view-models.ts'
 import { credentialLoginSchema } from '../shared/app/validation.ts'
 import { loginUser, resolveRoute } from '../shared/app/session.ts'
 
@@ -138,6 +138,50 @@ runTest('academics empty states stay stable', () => {
   assert.equal(view.attendance.badge.label, 'Attendance pending')
 })
 
+runTest('financial view exposes fee structure and payment tracking', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentFinancialView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.equal(view.fees.items.length, 8)
+  assert.equal(view.paymentTracking.monthlyStatus.length > 0, true)
+  assert.equal(view.paymentTracking.history.length > 0, true)
+  assert.equal(view.onlinePayment.gateways.length, 3)
+  assert.equal(view.taxDocuments.items.length > 0, true)
+})
+
+runTest('financial view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentFinancialView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.fees.items.length, 0)
+  assert.equal(view.paymentTracking.history.length, 0)
+  assert.equal(view.requests.items.length, 0)
+})
+
+runTest('contracts view exposes current contract and signature states', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentContractsView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.match(view.currentContract?.contractRef ?? '', /CNT-LINA/)
+  assert.equal(view.digitalSignature.signers.length, 2)
+  assert.equal(view.history.items.length > 0, true)
+  assert.equal(view.alerts.items.length > 0, true)
+})
+
+runTest('contracts view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentContractsView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.currentContract, null)
+  assert.equal(view.digitalSignature.signers.length, 0)
+})
+
 runTest('credential schema accepts current login shape', () => {
   const parsed = credentialLoginSchema.safeParse({
     schoolCode: 'SUMMIT',
@@ -147,3 +191,5 @@ runTest('credential schema accepts current login shape', () => {
 
   assert.equal(parsed.success, true)
 })
+
+

@@ -1,4 +1,6 @@
 ﻿import { quickActionModules, ROLE_LABELS, schoolBrand } from './data.ts'
+import { childContractsById } from './contracts.ts'
+import { childFinanceById } from './finance.ts'
 import { listDevicesForAccount } from './session.ts'
 import type {
   AcademicAttendanceBadgeView,
@@ -9,9 +11,13 @@ import type {
   AcademicHomeworkRecord,
   AcademicScheduleDayView,
   ChildRecord,
+  ContractSignatureLogRecord,
+  FinancialRequestRecord,
   ParentAcademicsView,
   ParentAccount,
+  ParentContractsView,
   ParentDashboardView,
+  ParentFinancialView,
   RoleWorkspaceView,
   SeedUser,
   ViewDevice,
@@ -72,6 +78,10 @@ function formatScore(score: number) {
 
 function buildChartHeight(score: number) {
   return Math.max(18, Math.min(100, Math.round((score / 20) * 100)))
+}
+
+function formatMad(amount: number) {
+  return `MAD ${Math.round(amount).toLocaleString('en-GB')}`
 }
 
 function toCalendarTimestamp(value: string) {
@@ -361,6 +371,165 @@ export function buildParentAcademicsView(account: SeedUser | null, selectedChild
   }
 }
 
+function sortRequestsNewestFirst(items: FinancialRequestRecord[]) {
+  return [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+}
+
+export function buildParentFinancialView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentFinancialView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const finance = activeChild ? childFinanceById[activeChild.id] ?? null : null
+
+  const feeItems = finance?.feeItems ?? []
+  const totalThisYear = feeItems.reduce((sum, item) => sum + item.thisYearAmountMad, 0)
+  const totalLastYear = feeItems.reduce((sum, item) => sum + item.lastYearAmountMad, 0)
+  const includedCount = feeItems.filter((item) => item.included).length
+  const extraCount = feeItems.filter((item) => !item.included).length
+  const yearDelta = totalThisYear - totalLastYear
+
+  const trackingMonthly = finance?.monthlyStatus ?? []
+  const trackingHistory = finance?.paymentHistory ?? []
+  const totalPaidThisYear = trackingHistory.filter((item) => item.status === 'confirmed').reduce((sum, item) => sum + item.amountMad, 0)
+  const totalDueThisYear = trackingMonthly.reduce((sum, item) => sum + item.amountDueMad, 0)
+  const totalOutstanding = Math.max(0, totalDueThisYear - totalPaidThisYear)
+  const nextPending = trackingMonthly.find((item) => item.status === 'pending')
+  const overdueCount = trackingMonthly.filter((item) => item.status === 'overdue').length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && finance
+      ? [
+          { label: 'Total paid this year', value: formatMad(totalPaidThisYear), detail: `${trackingHistory.filter((item) => item.status === 'confirmed').length} confirmed payments` },
+          { label: 'Outstanding balance', value: formatMad(totalOutstanding), detail: overdueCount > 0 ? `${overdueCount} overdue month${overdueCount > 1 ? 's' : ''}` : 'No overdue months' },
+          { label: 'Next due date', value: nextPending?.dueDateLabel ?? 'No pending due date', detail: nextPending ? `${nextPending.monthLabel} · ${formatMad(nextPending.amountDueMad)}` : 'All configured months are paid' },
+          { label: 'Fee change vs last year', value: `${yearDelta >= 0 ? '+' : ''}${formatMad(yearDelta)}`, detail: `Current total ${formatMad(totalThisYear)} vs ${formatMad(totalLastYear)} last year` }
+        ]
+      : [
+          { label: 'Total paid this year', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Outstanding balance', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Next due date', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Fee change vs last year', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    fees: {
+      items: feeItems,
+      includedCount,
+      extraCount,
+      totalThisYearMad: totalThisYear,
+      totalLastYearMad: totalLastYear,
+      yearOverYearLabel: `${yearDelta >= 0 ? 'Increase' : 'Decrease'} of ${formatMad(Math.abs(yearDelta))} compared with last school year.`,
+      faq: finance?.feeFaq ?? []
+    },
+    paymentTracking: {
+      monthlyStatus: trackingMonthly,
+      history: trackingHistory,
+      reminders: finance?.reminders ?? [],
+      lateNotices: finance?.lateNotices ?? [],
+      totalPaidThisYearMad: totalPaidThisYear,
+      totalOutstandingMad: totalOutstanding
+    },
+    onlinePayment: {
+      gateways: finance?.gateways ?? [],
+      installmentOptions: finance?.installmentOptions ?? [],
+      partialPaymentMinMad: finance?.partialPaymentMinMad ?? 0,
+      recurringEnabled: finance?.recurringEnabled ?? false,
+      securityComplianceNote: finance?.securityComplianceNote ?? 'Secure payment options will appear once enabled by the school.'
+    },
+    requests: {
+      items: sortRequestsNewestFirst(finance?.requests ?? [])
+    },
+    taxDocuments: {
+      items: finance?.taxDocuments ?? [],
+      autoGenerationNote: finance?.autoGenerationNote ?? 'Tax documents will be generated once yearly billing closes.'
+    }
+  }
+}
+
+function sortSignaturesNewestFirst(items: ContractSignatureLogRecord[]) {
+  return [...items].sort((left, right) => new Date(right.signedAt).getTime() - new Date(left.signedAt).getTime())
+}
+
+export function buildParentContractsView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentContractsView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const contracts = activeChild ? childContractsById[activeChild.id] ?? null : null
+
+  const current = contracts?.current ?? null
+  const signatureLog = sortSignaturesNewestFirst(contracts?.signatureLog ?? [])
+  const signerStatuses = (contracts?.signers ?? []).map((item) => {
+    const signed = signatureLog.find((entry) => entry.roleId === item.roleId)
+    return {
+      ...item,
+      status: signed ? 'signed' as const : 'pending' as const,
+      signedAt: signed?.signedAt ?? null,
+      ipAddress: signed?.ipAddress ?? null
+    }
+  })
+  const signedCount = signerStatuses.filter((item) => item.status === 'signed').length
+  const renewalDate = current?.renewalDate ? new Date(current.renewalDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unavailable'
+  const historyItems = [...(contracts?.history ?? [])].sort((left, right) => new Date(right.signedAt).getTime() - new Date(left.signedAt).getTime())
+  const amendmentCount = historyItems.filter((item) => item.kind === 'amendment').length
+  const alerts = [...(contracts?.alerts ?? [])].sort((left, right) => new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime())
+  const nextAlert = alerts[0]
+  const reEnrollment = contracts?.reEnrollment ?? null
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && contracts
+      ? [
+          { label: 'Current contract', value: current?.contractRef ?? 'Unavailable', detail: current ? `${current.title} · ${current.status.replace('_', ' ')}` : 'No active contract found' },
+          { label: 'Renewal deadline', value: renewalDate, detail: current ? `Contract ends ${new Date(current.endsAt).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'No renewal date available' },
+          { label: 'Digital signatures', value: `${signedCount}/${signerStatuses.length} signed`, detail: `${signerStatuses.length - signedCount} pending signature(s)` },
+          { label: 'Re-enrollment', value: reEnrollment ? reEnrollment.status.replace('_', ' ') : 'Not started', detail: reEnrollment?.seatReserved ? `Seat reserved · ${reEnrollment.seatReservationCode ?? 'code pending'}` : 'Seat not reserved yet' }
+        ]
+      : [
+          { label: 'Current contract', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Renewal deadline', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Digital signatures', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Re-enrollment', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    currentContract: current,
+    digitalSignature: {
+      signers: signerStatuses,
+      signatureLog,
+      legalNote: current?.legalNote ?? 'Legal e-signature note will appear once a contract is available.'
+    },
+    reEnrollment,
+    history: {
+      items: historyItems,
+      yearlyComparison: contracts?.yearlyComparison ?? []
+    },
+    alerts: {
+      items: alerts.length
+        ? alerts
+        : nextAlert
+          ? [nextAlert]
+          : []
+    }
+  }
+}
+
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
   const summary: WorkspaceSummary | undefined = account?.workspaceSummary
   return {
@@ -379,5 +548,9 @@ export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Stora
     priorities: summary?.priorities ?? ['Define the first operational flow for this role.']
   }
 }
+
+
+
+
 
 

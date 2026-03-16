@@ -67,8 +67,8 @@ export const navigationByRole: Record<(typeof USER_ROLES)[keyof typeof USER_ROLE
   [USER_ROLES.parent]: [
     { label: 'Dashboard', route: APP_ROUTES.parentDashboard, description: 'Today at a glance' },
     { label: 'Academics', route: APP_ROUTES.academics, description: 'Timetable, grades, homework, exams, attendance' },
-    { label: 'Contracts', route: APP_ROUTES.contracts, description: 'Coming soon' },
-    { label: 'Fees', route: APP_ROUTES.fees, description: 'Coming soon' },
+    { label: 'Contracts', route: APP_ROUTES.contracts, description: 'Current contract, signatures, re-enrollment, and alerts' },
+    { label: 'Fees', route: APP_ROUTES.fees, description: 'Fee structure, payments, and tax documents' },
     { label: 'Activities', route: APP_ROUTES.activities, description: 'Coming soon' },
     { label: 'Transport', route: APP_ROUTES.transport, description: 'Coming soon' },
     { label: 'Approvals', route: APP_ROUTES.approvals, description: 'Coming soon' },

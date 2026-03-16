@@ -1345,6 +1345,45 @@ input {
   border-color: rgba(15, 76, 92, 0.34);
 }
 
+.input-textarea--single {
+  min-height: auto;
+  resize: none;
+}
+
+.input-select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+}
+
+.input-select:focus {
+  outline: 2px solid rgba(15, 76, 92, 0.18);
+  border-color: rgba(15, 76, 92, 0.34);
+}
+
+.input-file {
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed var(--stroke-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-muted);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+}
+
 .attendance-history {
   margin-top: 18px;
 }

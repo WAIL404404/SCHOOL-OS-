@@ -502,6 +502,308 @@ export interface ParentAcademicsView {
   }
 }
 
+export type FinancialFeeCategory =
+  | 'tuition'
+  | 'registration'
+  | 'meal_plan'
+  | 'transport'
+  | 'after_school'
+  | 'supplies'
+  | 'insurance'
+  | 'uniform'
+
+export interface FinancialFeeItemRecord {
+  id: string
+  category: FinancialFeeCategory
+  label: string
+  description: string
+  frequency: 'annual' | 'monthly' | 'termly' | 'optional'
+  included: boolean
+  thisYearAmountMad: number
+  lastYearAmountMad: number
+}
+
+export interface FinancialFeeFaqRecord {
+  id: string
+  question: string
+  answer: string
+}
+
+export interface FinancialMonthlyStatusRecord {
+  monthId: string
+  monthLabel: string
+  dueDateLabel: string
+  status: 'paid' | 'pending' | 'overdue'
+  amountDueMad: number
+  amountPaidMad: number
+  paidAt: string | null
+}
+
+export interface FinancialPaymentHistoryRecord {
+  id: string
+  postedAt: string
+  label: string
+  amountMad: number
+  method: 'CMI' | 'Stripe' | 'PayPal' | 'Bank transfer' | 'Cashdesk'
+  status: 'confirmed' | 'pending' | 'failed'
+  invoiceRef: string
+  receiptRef: string | null
+  invoiceUrl: string
+  receiptUrl: string | null
+  note: string | null
+}
+
+export interface FinancialReminderRecord {
+  id: string
+  invoiceRef: string
+  dueAt: string
+  triggerDaysBefore: 7 | 3 | 1
+  channel: 'push' | 'email' | 'sms' | 'whatsapp'
+  status: 'scheduled' | 'sent'
+}
+
+export interface FinancialLateNoticeRecord {
+  id: string
+  invoiceRef: string
+  raisedAt: string
+  detail: string
+  escalation: string
+}
+
+export interface FinancialGatewayRecord {
+  id: string
+  label: 'CMI (Morocco)' | 'Stripe' | 'PayPal'
+  enabled: boolean
+  detail: string
+}
+
+export interface FinancialInstallmentOptionRecord {
+  count: 2 | 3 | 4
+  detail: string
+  processingFeePercent: number
+}
+
+export interface FinancialRequestRecord {
+  id: string
+  childId: string
+  type: 'installment_plan' | 'discount' | 'scholarship'
+  status: 'submitted' | 'reviewing' | 'approved' | 'rejected'
+  createdAt: string
+  updatedAt: string
+  requestedAmountMad: number | null
+  detail: string
+  agreementUrl: string | null
+  decisionNote: string | null
+}
+
+export interface FinancialTaxDocumentRecord {
+  id: string
+  yearLabel: string
+  generatedAt: string
+  amountPaidMad: number
+  status: 'available' | 'scheduled'
+  downloadUrl: string
+}
+
+export interface ChildFinanceRecord {
+  feeItems: FinancialFeeItemRecord[]
+  feeFaq: FinancialFeeFaqRecord[]
+  monthlyStatus: FinancialMonthlyStatusRecord[]
+  paymentHistory: FinancialPaymentHistoryRecord[]
+  reminders: FinancialReminderRecord[]
+  lateNotices: FinancialLateNoticeRecord[]
+  gateways: FinancialGatewayRecord[]
+  installmentOptions: FinancialInstallmentOptionRecord[]
+  requests: FinancialRequestRecord[]
+  taxDocuments: FinancialTaxDocumentRecord[]
+  recurringEnabled: boolean
+  partialPaymentMinMad: number
+  securityComplianceNote: string
+  autoGenerationNote: string
+}
+
+export interface ParentFinancialView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  fees: {
+    items: FinancialFeeItemRecord[]
+    includedCount: number
+    extraCount: number
+    totalThisYearMad: number
+    totalLastYearMad: number
+    yearOverYearLabel: string
+    faq: FinancialFeeFaqRecord[]
+  }
+  paymentTracking: {
+    monthlyStatus: FinancialMonthlyStatusRecord[]
+    history: FinancialPaymentHistoryRecord[]
+    reminders: FinancialReminderRecord[]
+    lateNotices: FinancialLateNoticeRecord[]
+    totalPaidThisYearMad: number
+    totalOutstandingMad: number
+  }
+  onlinePayment: {
+    gateways: FinancialGatewayRecord[]
+    installmentOptions: FinancialInstallmentOptionRecord[]
+    partialPaymentMinMad: number
+    recurringEnabled: boolean
+    securityComplianceNote: string
+  }
+  requests: {
+    items: FinancialRequestRecord[]
+  }
+  taxDocuments: {
+    items: FinancialTaxDocumentRecord[]
+    autoGenerationNote: string
+  }
+}
+
+export interface ContractTermRecord {
+  id: string
+  title: string
+  detail: string
+}
+
+export interface ContractCoverageRecord {
+  id: string
+  label: string
+  included: boolean
+  detail: string
+}
+
+export interface ContractCurrentRecord {
+  id: string
+  contractRef: string
+  title: string
+  startsAt: string
+  endsAt: string
+  renewalDate: string
+  status: 'active' | 'expiring_soon' | 'expired'
+  fullContractUrl: string
+  terms: ContractTermRecord[]
+  coverage: ContractCoverageRecord[]
+  cancellationPolicy: string
+  legalNote: string
+}
+
+export interface ContractSignerRecord {
+  roleId: 'parent_1' | 'parent_2'
+  label: string
+  fullName: string
+}
+
+export interface ContractSignatureLogRecord {
+  id: string
+  contractId: string
+  roleId: ContractSignerRecord['roleId']
+  signedBy: string
+  signedAt: string
+  ipAddress: string
+}
+
+export interface ContractSignerStatusView extends ContractSignerRecord {
+  status: 'signed' | 'pending'
+  signedAt: string | null
+  ipAddress: string | null
+}
+
+export interface ContractReEnrollmentDocumentRecord {
+  id: string
+  label: string
+  status: 'uploaded' | 'missing' | 'pending_review'
+  fileName: string | null
+  uploadedAt: string | null
+}
+
+export interface ContractReEnrollmentRecord {
+  id: string
+  yearLabel: string
+  status: 'submitted' | 'under_review' | 'confirmed'
+  submittedAt: string
+  updatedAt: string
+  earlyBirdEligible: boolean
+  earlyBirdDiscountMad: number | null
+  seatReserved: boolean
+  seatReservationCode: string | null
+  documents: ContractReEnrollmentDocumentRecord[]
+}
+
+export interface ContractHistoryRecord {
+  id: string
+  yearLabel: string
+  kind: 'enrollment' | 'amendment'
+  title: string
+  summary: string
+  signedAt: string
+  pdfUrl: string
+}
+
+export interface ContractYearComparisonRecord {
+  id: string
+  label: string
+  currentYearValue: string
+  previousYearValue: string
+  deltaLabel: string
+}
+
+export interface ContractAlertRecord {
+  id: string
+  type: 'expiry_30_days' | 'ready_to_sign' | 'unsigned_7_days'
+  title: string
+  detail: string
+  scheduledFor: string
+  status: 'scheduled' | 'sent'
+}
+
+export interface ChildContractsRecord {
+  current: ContractCurrentRecord
+  signers: ContractSignerRecord[]
+  signatureLog: ContractSignatureLogRecord[]
+  reEnrollment: ContractReEnrollmentRecord
+  history: ContractHistoryRecord[]
+  yearlyComparison: ContractYearComparisonRecord[]
+  alerts: ContractAlertRecord[]
+}
+
+export interface ParentContractsView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  currentContract: ContractCurrentRecord | null
+  digitalSignature: {
+    signers: ContractSignerStatusView[]
+    signatureLog: ContractSignatureLogRecord[]
+    legalNote: string
+  }
+  reEnrollment: ContractReEnrollmentRecord | null
+  history: {
+    items: ContractHistoryRecord[]
+    yearlyComparison: ContractYearComparisonRecord[]
+  }
+  alerts: {
+    items: ContractAlertRecord[]
+  }
+}
+
 export interface RoleWorkspaceView {
   role: UserRole
   roleLabel: string
