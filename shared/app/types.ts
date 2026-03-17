@@ -980,6 +980,381 @@ export interface ParentActivitiesView {
   }
 }
 
+export interface TransportCoordinateRecord {
+  lat: number
+  lng: number
+}
+
+export interface TransportLivePointRecord {
+  id: string
+  recordedAt: string
+  position: TransportCoordinateRecord
+  speedKmh: number
+  etaMinutes: number
+  onRoute: boolean
+}
+
+export interface TransportNotificationRecord {
+  id: string
+  type: 'boarded' | 'exited' | 'bus_5_min' | 'route_change' | 'geofence'
+  title: string
+  detail: string
+  createdAt: string
+}
+
+export interface TransportRouteStopRecord {
+  id: string
+  label: string
+  scheduledAt: string
+  etaAt: string
+  status: 'upcoming' | 'approaching' | 'served'
+}
+
+export interface TransportDriverRecord {
+  fullName: string
+  phone: string
+  busNumber: string
+  photoUrl: string
+  licenseNumber: string
+  licenseValidUntil: string
+}
+
+export interface TransportGeofenceAlertRecord {
+  id: string
+  createdAt: string
+  detail: string
+  severity: 'warning' | 'critical'
+}
+
+export interface TransportPickupPersonRecord {
+  id: string
+  fullName: string
+  relationship: string
+  temporary: boolean
+  expiresAt: string | null
+  qrCode: string
+  photoIdLabel: string
+}
+
+export interface TransportPickupLogRecord {
+  id: string
+  event: 'pickup' | 'dropoff' | 'unauthorized_attempt'
+  actorName: string
+  authorized: boolean
+  happenedAt: string
+  note: string
+}
+
+export interface TransportRequestRecord {
+  id: string
+  type: 'service_request' | 'skip_once' | 'change_stop' | 'issue_report'
+  status: 'submitted' | 'reviewing' | 'approved' | 'rejected' | 'completed'
+  detail: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ChildTransportModuleRecord {
+  routeName: string
+  alternativeRoute: string
+  livePoints: TransportLivePointRecord[]
+  routeHistory: TransportLivePointRecord[]
+  notifications: TransportNotificationRecord[]
+  stops: TransportRouteStopRecord[]
+  routeUpdates: string[]
+  driver: TransportDriverRecord
+  geofenceAlerts: TransportGeofenceAlertRecord[]
+  parentQrCode: string
+  pickupPersons: TransportPickupPersonRecord[]
+  pickupLog: TransportPickupLogRecord[]
+  requests: TransportRequestRecord[]
+}
+
+export interface ParentTransportView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  liveTracking: {
+    routeName: string
+    mapUrl: string | null
+    latestPoint: TransportLivePointRecord | null
+    routeHistory: TransportLivePointRecord[]
+    notifications: TransportNotificationRecord[]
+    geofenceAlerts: TransportGeofenceAlertRecord[]
+  }
+  routeInfo: {
+    driver: TransportDriverRecord | null
+    stops: TransportRouteStopRecord[]
+    routeUpdates: string[]
+    alternativeRoute: string | null
+  }
+  pickup: {
+    parentQrCode: string | null
+    persons: TransportPickupPersonRecord[]
+    log: TransportPickupLogRecord[]
+  }
+  requests: {
+    items: TransportRequestRecord[]
+  }
+}
+
+export type ApprovalType =
+  | 'field_trip'
+  | 'photo_video'
+  | 'early_dismissal'
+  | 'medical_treatment'
+  | 'competition_event'
+  | 'alternative_pickup'
+  | 'special_diet'
+  | 'internet_policy'
+  | 'data_sharing'
+  | 'after_school_enrollment'
+
+export interface ApprovalAttachmentRecord {
+  id: string
+  label: string
+  kind: 'pdf' | 'image' | 'link'
+  url: string
+}
+
+export interface ApprovalReminderRecord {
+  id: string
+  approvalId: string
+  triggerHoursAfter: 24 | 48 | 72
+  scheduledFor: string
+  status: 'scheduled' | 'sent'
+}
+
+export interface ApprovalSignatureLogRecord {
+  id: string
+  approvalId: string
+  action: 'signed' | 'revoked'
+  actorName: string
+  actedAt: string
+  ipAddress: string
+  deviceInfo: string
+}
+
+export interface ApprovalRequestRecord {
+  id: string
+  childId: string
+  type: ApprovalType
+  title: string
+  summary: string
+  detail: string
+  requestedBy: string
+  requestedAt: string
+  updatedAt: string
+  eventDate: string | null
+  status: 'pending' | 'signed' | 'revoked' | 'expired'
+  attachments: ApprovalAttachmentRecord[]
+  pdfUrl: string
+  signatureRequired: boolean
+  signedAt: string | null
+  signerName: string | null
+  schoolConfirmation: string
+  reminders: ApprovalReminderRecord[]
+  canRevoke: boolean
+  revokeDeadline: string | null
+  revokePolicy: string
+}
+
+export interface ChildApprovalsRecord {
+  items: ApprovalRequestRecord[]
+  signatureLog: ApprovalSignatureLogRecord[]
+  flowNote: string
+  archiveNote: string
+}
+
+export interface ParentApprovalsView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  current: {
+    items: ApprovalRequestRecord[]
+    pendingCount: number
+    signedCount: number
+    reminders: ApprovalReminderRecord[]
+    signatureLog: ApprovalSignatureLogRecord[]
+    flowNote: string
+  }
+  history: {
+    items: ApprovalRequestRecord[]
+    archiveNote: string
+  }
+}
+
+export type CommunicationRole =
+  | 'class_teacher'
+  | 'subject_teacher'
+  | 'administration'
+  | 'director'
+  | 'supervisor'
+  | 'psychologist'
+
+export interface CommunicationParticipantRecord {
+  id: string
+  role: CommunicationRole
+  fullName: string
+  title: string
+  averageResponseHours: number
+  officeHours: string
+  availabilityNote: string
+}
+
+export interface CommunicationAttachmentRecord {
+  id: string
+  kind: 'image' | 'file' | 'voice_note' | 'pdf' | 'video'
+  label: string
+  url: string
+}
+
+export interface ConversationMessageRecord {
+  id: string
+  sender: 'parent' | 'school'
+  senderName: string
+  body: string
+  sentAt: string
+  seenAt: string | null
+  attachments: CommunicationAttachmentRecord[]
+}
+
+export interface CommunicationConversationRecord {
+  id: string
+  participant: CommunicationParticipantRecord
+  subject: string
+  archived: boolean
+  lastMessagePreview: string
+  messages: ConversationMessageRecord[]
+}
+
+export interface CommunicationAnnouncementRecord {
+  id: string
+  scope: 'school_wide' | 'class' | 'personal' | 'emergency'
+  title: string
+  body: string
+  createdAt: string
+  pinned: boolean
+  read: boolean
+  acknowledgedAt: string | null
+  targetLabel: string
+  attachments: CommunicationAttachmentRecord[]
+}
+
+export interface CommunicationAppointmentSlotRecord {
+  id: string
+  participantId: string
+  startsAt: string
+  endsAt: string
+  mode: 'in_person' | 'virtual'
+  available: boolean
+}
+
+export interface CommunicationAppointmentReminderRecord {
+  id: string
+  trigger: '1_day' | '1_hour'
+  scheduledFor: string
+  status: 'scheduled' | 'sent'
+}
+
+export interface CommunicationAppointmentRecord {
+  id: string
+  participantId: string
+  participantLabel: string
+  purpose: string
+  status: 'requested' | 'confirmed' | 'rescheduled' | 'cancelled' | 'completed'
+  startsAt: string
+  endsAt: string
+  mode: 'in_person' | 'virtual'
+  meetingLink: string | null
+  reminders: CommunicationAppointmentReminderRecord[]
+  summary: string | null
+  actionItems: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CommunicationWhatsAppSettingsRecord {
+  optIn: boolean
+  invoiceReminders: boolean
+  emergencyAlerts: boolean
+  absenceNotifications: boolean
+  busTrackingLink: boolean
+  updatedAt: string
+}
+
+export interface CommunicationNotificationChannelsRecord {
+  push: boolean
+  email: boolean
+  sms: boolean
+  whatsapp: boolean
+}
+
+export interface CommunicationNotificationPreferencesRecord {
+  channels: CommunicationNotificationChannelsRecord
+  frequency: 'instant' | 'daily_digest' | 'weekly'
+  doNotDisturbStart: string | null
+  doNotDisturbEnd: string | null
+  whatsapp: CommunicationWhatsAppSettingsRecord
+}
+
+export interface ChildMessagesRecord {
+  conversations: CommunicationConversationRecord[]
+  announcements: CommunicationAnnouncementRecord[]
+  appointmentSlots: CommunicationAppointmentSlotRecord[]
+  appointments: CommunicationAppointmentRecord[]
+  preferences: CommunicationNotificationPreferencesRecord
+}
+
+export interface ParentMessagesView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  messaging: {
+    conversations: CommunicationConversationRecord[]
+    archivedCount: number
+  }
+  announcements: {
+    items: CommunicationAnnouncementRecord[]
+    unreadCount: number
+    pinnedCount: number
+  }
+  appointments: {
+    slots: CommunicationAppointmentSlotRecord[]
+    items: CommunicationAppointmentRecord[]
+  }
+  preferences: {
+    item: CommunicationNotificationPreferencesRecord | null
+  }
+}
+
 export interface RoleWorkspaceView {
   role: UserRole
   roleLabel: string

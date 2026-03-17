@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict'
 import { APP_ROUTES, seedParentAccounts, seedUsers } from '../shared/app/data.ts'
-import { buildParentAcademicsView, buildParentActivitiesView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView } from '../shared/app/view-models.ts'
+import { buildParentAcademicsView, buildParentActivitiesView, buildParentApprovalsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView, buildParentMessagesView, buildParentTransportView } from '../shared/app/view-models.ts'
 import { credentialLoginSchema } from '../shared/app/validation.ts'
 import { loginUser, resolveRoute } from '../shared/app/session.ts'
 
@@ -200,6 +200,71 @@ runTest('activities view empty states stay stable', () => {
   assert.equal(view.heroStats[0].value, 'Unavailable')
   assert.equal(view.catalog.items.length, 0)
   assert.equal(view.booking.bookings.length, 0)
+})
+
+runTest('transport view exposes live tracking and secure pickup data', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentTransportView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.match(view.liveTracking.routeName, /North Route/i)
+  assert.equal(view.liveTracking.latestPoint !== null, true)
+  assert.equal(view.routeInfo.stops.length > 0, true)
+  assert.equal(view.pickup.parentQrCode !== null, true)
+  assert.equal(view.requests.items.length > 0, true)
+})
+
+runTest('transport view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentTransportView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.liveTracking.latestPoint, null)
+  assert.equal(view.routeInfo.stops.length, 0)
+  assert.equal(view.requests.items.length, 0)
+})
+
+runTest('approvals view exposes signature flow and archive records', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentApprovalsView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.equal(view.current.items.length > 0, true)
+  assert.equal(view.current.signatureLog.length > 0, true)
+  assert.equal(view.current.reminders.length > 0, true)
+  assert.equal(view.history.items.length > 0, true)
+})
+
+runTest('approvals view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentApprovalsView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.current.items.length, 0)
+  assert.equal(view.history.items.length, 0)
+})
+
+runTest('messages view exposes conversations, announcements, and meetings', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentMessagesView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.equal(view.messaging.conversations.length > 0, true)
+  assert.equal(view.announcements.items.length > 0, true)
+  assert.equal(view.appointments.items.length > 0, true)
+  assert.equal(view.preferences.item?.channels.push, true)
+})
+
+runTest('messages view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentMessagesView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.messaging.conversations.length, 0)
+  assert.equal(view.announcements.items.length, 0)
 })
 
 runTest('credential schema accepts current login shape', () => {

@@ -70,10 +70,10 @@ export const navigationByRole: Record<(typeof USER_ROLES)[keyof typeof USER_ROLE
     { label: 'Contracts', route: APP_ROUTES.contracts, description: 'Current contract, signatures, re-enrollment, and alerts' },
     { label: 'Fees', route: APP_ROUTES.fees, description: 'Fee structure, payments, and tax documents' },
     { label: 'Activities', route: APP_ROUTES.activities, description: 'Catalog, booking, tracking, and seasonal programs' },
-    { label: 'Transport', route: APP_ROUTES.transport, description: 'Coming soon' },
-    { label: 'Approvals', route: APP_ROUTES.approvals, description: 'Coming soon' },
+    { label: 'Transport', route: APP_ROUTES.transport, description: 'Live tracking, secure pickup, and transport requests' },
+    { label: 'Approvals', route: APP_ROUTES.approvals, description: 'Permissions, digital signatures, reminders, and approval history' },
     { label: 'After-school', route: APP_ROUTES.afterSchool, description: 'Included in Activities module' },
-    { label: 'Messages', route: APP_ROUTES.messages, description: 'Coming soon' }
+    { label: 'Messages', route: APP_ROUTES.messages, description: 'Direct messaging, announcements, meetings, WhatsApp, and notification controls' }
   ],
   [USER_ROLES.transportDriver]: [{ label: 'Overview', route: APP_ROUTES.driverOverview, description: 'Assigned routes' }],
   [USER_ROLES.supervisor]: [{ label: 'Overview', route: APP_ROUTES.supervisorOverview, description: 'Daily supervision' }]

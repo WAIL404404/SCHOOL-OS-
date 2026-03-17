@@ -1,7 +1,10 @@
 ﻿import { quickActionModules, ROLE_LABELS, schoolBrand } from './data.ts'
 import { childActivitiesById } from './activities.ts'
+import { childApprovalsById } from './approvals.ts'
 import { childContractsById } from './contracts.ts'
 import { childFinanceById } from './finance.ts'
+import { childMessagesById } from './messages.ts'
+import { childTransportById } from './transport.ts'
 import { listDevicesForAccount } from './session.ts'
 import type {
   AcademicAttendanceBadgeView,
@@ -12,17 +15,29 @@ import type {
   AcademicHomeworkRecord,
   AcademicScheduleDayView,
   ActivityBookingRecord,
+  ApprovalReminderRecord,
+  ApprovalRequestRecord,
+  ApprovalSignatureLogRecord,
   ChildRecord,
+  CommunicationAnnouncementRecord,
+  CommunicationAppointmentRecord,
+  CommunicationConversationRecord,
   ContractSignatureLogRecord,
   FinancialRequestRecord,
   ParentAcademicsView,
   ParentAccount,
   ParentActivitiesView,
+  ParentApprovalsView,
   ParentContractsView,
   ParentDashboardView,
   ParentFinancialView,
+  ParentMessagesView,
+  ParentTransportView,
   RoleWorkspaceView,
   SeedUser,
+  TransportPickupLogRecord,
+  TransportRequestRecord,
+  TransportRouteStopRecord,
   ViewDevice,
   WorkspaceSummary
 } from './types.ts'
@@ -538,6 +553,24 @@ function sortActivityBookings(items: ActivityBookingRecord[]) {
   return [...items].sort((left, right) => new Date(right.bookedAt).getTime() - new Date(left.bookedAt).getTime())
 }
 
+function sortTransportRequestsNewestFirst(items: TransportRequestRecord[]) {
+  return [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+}
+
+function sortTransportStops(items: TransportRouteStopRecord[]) {
+  return [...items].sort((left, right) => new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime())
+}
+
+function sortTransportLogsNewestFirst(items: TransportPickupLogRecord[]) {
+  return [...items].sort((left, right) => new Date(right.happenedAt).getTime() - new Date(left.happenedAt).getTime())
+}
+
+function buildTransportMapUrl(lat: number, lng: number) {
+  const safeLat = Number(lat.toFixed(5))
+  const safeLng = Number(lng.toFixed(5))
+  return `https://www.openstreetmap.org/?mlat=${safeLat}&mlon=${safeLng}#map=14/${safeLat}/${safeLng}`
+}
+
 export function buildParentActivitiesView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentActivitiesView {
   const parent = account?.role === 'parent' ? account as ParentAccount : null
   const children = parent?.children ?? []
@@ -604,6 +637,238 @@ export function buildParentActivitiesView(account: SeedUser | null, selectedChil
     }
   }
 }
+
+export function buildParentTransportView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentTransportView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const transport = activeChild ? childTransportById[activeChild.id] ?? null : null
+
+  const latestPoint = transport?.livePoints.length ? [...transport.livePoints].sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0] ?? null : null
+  const routeHistory = [...(transport?.routeHistory ?? [])].sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())
+  const notifications = [...(transport?.notifications ?? [])].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+  const geofenceAlerts = [...(transport?.geofenceAlerts ?? [])].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+  const stops = sortTransportStops(transport?.stops ?? [])
+  const pickupLog = sortTransportLogsNewestFirst(transport?.pickupLog ?? [])
+  const requests = sortTransportRequestsNewestFirst(transport?.requests ?? [])
+
+  const upcomingStop = stops.find((item) => item.status !== 'served') ?? stops[stops.length - 1]
+  const unauthorizedAttempts = pickupLog.filter((item) => !item.authorized).length
+  const openRequests = requests.filter((item) => item.status === 'submitted' || item.status === 'reviewing').length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && transport
+      ? [
+          { label: 'Live ETA', value: latestPoint ? `${latestPoint.etaMinutes} min` : 'Awaiting GPS', detail: upcomingStop ? `Next stop: ${upcomingStop.label}` : 'No stop assigned yet' },
+          { label: 'Bus speed', value: latestPoint ? `${latestPoint.speedKmh} km/h` : '0 km/h', detail: latestPoint?.onRoute ? 'Route alignment is normal' : 'Out-of-route alert active' },
+          { label: 'Pickup security', value: `${pickupLog.filter((item) => item.authorized).length}/${pickupLog.length} authorized`, detail: unauthorizedAttempts > 0 ? `${unauthorizedAttempts} unauthorized attempt(s) flagged` : 'No unauthorized attempts' },
+          { label: 'Transport requests', value: String(openRequests), detail: `${requests.length} request(s) this school year` }
+        ]
+      : [
+          { label: 'Live ETA', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Bus speed', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Pickup security', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Transport requests', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    liveTracking: {
+      routeName: transport?.routeName ?? 'Route not assigned',
+      mapUrl: latestPoint ? buildTransportMapUrl(latestPoint.position.lat, latestPoint.position.lng) : null,
+      latestPoint,
+      routeHistory,
+      notifications,
+      geofenceAlerts
+    },
+    routeInfo: {
+      driver: transport?.driver ?? null,
+      stops,
+      routeUpdates: transport?.routeUpdates ?? [],
+      alternativeRoute: transport?.alternativeRoute ?? null
+    },
+    pickup: {
+      parentQrCode: transport?.parentQrCode ?? null,
+      persons: transport?.pickupPersons ?? [],
+      log: pickupLog
+    },
+    requests: {
+      items: requests
+    }
+  }
+}
+
+function approvalStatusOrder(status: ApprovalRequestRecord['status']) {
+  if (status === 'pending') return 0
+  if (status === 'signed') return 1
+  if (status === 'revoked') return 2
+  return 3
+}
+
+function sortApprovals(items: ApprovalRequestRecord[]) {
+  return [...items].sort((left, right) => {
+    const statusDelta = approvalStatusOrder(left.status) - approvalStatusOrder(right.status)
+    if (statusDelta !== 0) return statusDelta
+    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+  })
+}
+
+function sortApprovalLogs(items: ApprovalSignatureLogRecord[]) {
+  return [...items].sort((left, right) => new Date(right.actedAt).getTime() - new Date(left.actedAt).getTime())
+}
+
+function collectApprovalReminders(items: ApprovalRequestRecord[]): ApprovalReminderRecord[] {
+  return items.flatMap((item) => item.reminders).sort((left, right) => new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime())
+}
+
+export function buildParentApprovalsView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentApprovalsView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const approvals = activeChild ? childApprovalsById[activeChild.id] ?? null : null
+
+  const items = sortApprovals(approvals?.items ?? [])
+  const signatureLog = sortApprovalLogs(approvals?.signatureLog ?? [])
+  const reminders = collectApprovalReminders(items)
+  const pendingCount = items.filter((item) => item.status === 'pending').length
+  const signedCount = items.filter((item) => item.status === 'signed').length
+  const revocableCount = items.filter((item) => item.status === 'signed' && item.canRevoke).length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && approvals
+      ? [
+          { label: 'Pending approvals', value: String(pendingCount), detail: pendingCount > 0 ? 'School is waiting for parent action' : 'No pending signatures right now' },
+          { label: 'Signed this year', value: String(signedCount), detail: `${items.length} total approval record(s)` },
+          { label: 'Reminder cadence', value: String(reminders.filter((item) => item.status === 'scheduled').length), detail: '24h, 48h, and 72h reminder automation' },
+          { label: 'Revocable consents', value: String(revocableCount), detail: revocableCount > 0 ? 'Consents still inside revocation window' : 'No active revocation windows' }
+        ]
+      : [
+          { label: 'Pending approvals', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Signed this year', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Reminder cadence', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Revocable consents', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    current: {
+      items,
+      pendingCount,
+      signedCount,
+      reminders,
+      signatureLog,
+      flowNote: approvals?.flowNote ?? 'Approval flow details will appear once school requests are available.'
+    },
+    history: {
+      items: [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()),
+      archiveNote: approvals?.archiveNote ?? 'Approval history will appear here when records become available.'
+    }
+  }
+}
+
+function sortConversations(items: CommunicationConversationRecord[]) {
+  return [...items].sort((left, right) => {
+    if (left.archived !== right.archived) return left.archived ? 1 : -1
+    const leftTime = new Date(left.messages[left.messages.length - 1]?.sentAt ?? 0).getTime()
+    const rightTime = new Date(right.messages[right.messages.length - 1]?.sentAt ?? 0).getTime()
+    return rightTime - leftTime
+  })
+}
+
+function sortAnnouncements(items: CommunicationAnnouncementRecord[]) {
+  return [...items].sort((left, right) => {
+    if (left.pinned !== right.pinned) return left.pinned ? -1 : 1
+    if (left.scope !== right.scope) {
+      const order: Record<CommunicationAnnouncementRecord['scope'], number> = {
+        emergency: 0,
+        personal: 1,
+        class: 2,
+        school_wide: 3
+      }
+      return order[left.scope] - order[right.scope]
+    }
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+  })
+}
+
+function sortAppointments(items: CommunicationAppointmentRecord[]) {
+  return [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+}
+
+export function buildParentMessagesView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentMessagesView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const records = activeChild ? childMessagesById[activeChild.id] ?? null : null
+
+  const conversations = sortConversations(records?.conversations ?? [])
+  const announcements = sortAnnouncements(records?.announcements ?? [])
+  const appointments = sortAppointments(records?.appointments ?? [])
+  const unreadAnnouncements = announcements.filter((item) => !item.read).length
+  const archivedCount = conversations.filter((item) => item.archived).length
+  const unreadConversations = conversations.filter((item) => item.messages.some((row) => row.sender === 'school' && !row.seenAt)).length
+  const upcomingMeetings = appointments.filter((item) => item.status === 'requested' || item.status === 'confirmed' || item.status === 'rescheduled').length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && records
+      ? [
+          { label: 'Active conversations', value: String(conversations.length - archivedCount), detail: `${archivedCount} archived conversation(s)` },
+          { label: 'Unread messages', value: String(unreadConversations), detail: 'Seen receipts update when the parent opens the thread' },
+          { label: 'Announcements', value: String(unreadAnnouncements), detail: `${announcements.filter((item) => item.pinned).length} pinned or priority posts` },
+          { label: 'Meetings', value: String(upcomingMeetings), detail: `${appointments.length} total appointment record(s)` }
+        ]
+      : [
+          { label: 'Active conversations', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Unread messages', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Announcements', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Meetings', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    messaging: {
+      conversations,
+      archivedCount
+    },
+    announcements: {
+      items: announcements,
+      unreadCount: unreadAnnouncements,
+      pinnedCount: announcements.filter((item) => item.pinned).length
+    },
+    appointments: {
+      slots: records?.appointmentSlots ?? [],
+      items: appointments
+    },
+    preferences: {
+      item: records?.preferences ?? null
+    }
+  }
+}
+
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
   const summary: WorkspaceSummary | undefined = account?.workspaceSummary
   return {
