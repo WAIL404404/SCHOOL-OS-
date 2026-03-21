@@ -1,6 +1,9 @@
 import { platformBrand, schoolBrand, secondSchoolBrand } from './data.ts'
 import type {
+  MonetizationAddonRecord,
+  MonetizationTierRecord,
   QuickStatView,
+  SecurityPrivacyRecord,
   SuperAdminActionRecord,
   SuperAdminAnnouncementRecord,
   SuperAdminFeatureFlagRecord,
@@ -66,6 +69,18 @@ function whiteLabel(payload: SuperAdminWhiteLabelRecord): SuperAdminWhiteLabelRe
 
 function action(id: string, title: string, detail: string, ctaLabel: string): SuperAdminActionRecord {
   return { id, title, detail, ctaLabel }
+}
+
+function security(payload: SecurityPrivacyRecord): SecurityPrivacyRecord {
+  return payload
+}
+
+function tier(payload: MonetizationTierRecord): MonetizationTierRecord {
+  return payload
+}
+
+function addon(payload: MonetizationAddonRecord): MonetizationAddonRecord {
+  return payload
 }
 
 const superAdminPanel: SuperAdminPanelRecord = {
@@ -191,9 +206,100 @@ const superAdminPanel: SuperAdminPanelRecord = {
   quickActions: [
     action('super-action-1', 'Onboard new school', 'Start branding, fee setup, and class import for a new partner.', 'Open onboarding'),
     action('super-action-2', 'Review subscriptions', 'Check plan status, renewals, and billing exceptions across schools.', 'Open billing'),
-    action('super-action-3', 'Manage feature flags', 'Enable or disable modules per school without a redeploy.', 'Open flags'),
+    action('super-action-3', 'Run security review', 'Inspect 2FA adoption, privacy requests, backup health, and audit coverage across the portfolio.', 'Open security'),
     action('super-action-4', 'Send platform announcement', 'Broadcast maintenance, release notes, or policy changes.', 'Draft announcement')
-  ]
+  ],
+  securityPrivacy: {
+    stats: [
+      stat('2FA adoption', '93%', 'Admin and high-risk roles enrolled across active schools'),
+      stat('Daily audit volume', '1.8M', 'Cross-school activity stored in the platform audit ledger'),
+      stat('Backup success', '100%', 'Daily platform backups completed with verified restore snapshots'),
+      stat('Privacy requests', '5 open', 'Deletion, export, or consent tickets currently in progress')
+    ],
+    controls: [
+      security({ id: 'super-security-1', title: 'End-to-end encryption', detail: 'Sensitive parent communication, approvals, and document flows are encrypted in transit, with encrypted storage for school vault data.', status: 'Enabled', meta: 'Contracts and message vault covered' }),
+      security({ id: 'super-security-2', title: 'Two-factor authentication', detail: 'High-risk roles are forced through two-factor checks and device verification before accessing platform or school control panels.', status: 'Enforced', meta: '93% adoption, rollout still active' }),
+      security({ id: 'super-security-3', title: 'Session management and auto-logout', detail: 'Session lifetimes, trusted-device review, and forced revocation remain centralized so schools can terminate risk quickly.', status: 'Active', meta: '15-minute idle timeout' }),
+      security({ id: 'super-security-4', title: 'Role-based access control', detail: 'Super admin, school admin, teacher, parent, transport, and supervisor roles each run with scoped permissions and policy audit history.', status: 'Reviewed', meta: 'Platform-wide policy matrix live' })
+    ],
+    compliance: [
+      security({ id: 'super-compliance-1', title: 'GDPR and Loi 09-08 compliance', detail: 'The platform keeps lawful basis records, consent history, retention controls, and export trails aligned with EU and Moroccan privacy expectations.', status: 'Compliant', meta: 'Quarterly review cadence' }),
+      security({ id: 'super-compliance-2', title: 'Data residency in Morocco or EU', detail: 'Schools can be hosted in Morocco with EU fallback capacity, keeping residency and continuity commitments visible in one control surface.', status: 'Available', meta: 'Morocco primary, EU failover' }),
+      security({ id: 'super-compliance-3', title: 'Right to deletion and consent flows', detail: 'Parents can request data removal, while schools track approval, legal hold checks, and completion notices from the same privacy queue.', status: 'Operational', meta: '5 requests in progress' }),
+      security({ id: 'super-compliance-4', title: 'Analytics anonymization', detail: 'Platform analytics strip personal identifiers before cohort reporting, AI insights, or growth dashboards are generated for leadership.', status: 'Enabled', meta: 'Applied to analytics exports' })
+    ],
+    resilience: [
+      security({ id: 'super-resilience-1', title: 'Full audit log', detail: 'Every action across schools is recorded with actor, scope, and timestamp so investigations and compliance exports can be generated fast.', status: 'Streaming', meta: '1.8M events per day' }),
+      security({ id: 'super-resilience-2', title: 'Automated daily backups', detail: 'Encrypted daily backups with retention and restore verification protect platform and tenant data against accidental loss.', status: 'Healthy', meta: 'Restore drill passed this week' }),
+      security({ id: 'super-resilience-3', title: 'Annual penetration testing', detail: 'Independent penetration testing is scheduled yearly, and remediation actions are managed as a formal release gate.', status: 'Scheduled', meta: 'Next test Sep 2026' }),
+      security({ id: 'super-resilience-4', title: 'SSL and TLS everywhere', detail: 'All dashboards, APIs, webhooks, and custom domains are forced through HTTPS with modern TLS policies and certificate monitoring.', status: 'Protected', meta: 'TLS 1.3 and cert rotation active' })
+    ]
+  },
+  monetization: {
+    tiers: [
+      tier({
+        id: 'tier-starter',
+        name: 'Starter',
+        priceLabel: '$200 / month',
+        studentLimit: 'Up to 200 students',
+        accent: 'starter',
+        features: [
+          'Dashboard, grades, attendance, and messaging',
+          'Announcements and calendar',
+          'Basic payment tracking (view only)',
+          'Email support'
+        ]
+      }),
+      tier({
+        id: 'tier-professional',
+        name: 'Professional',
+        priceLabel: '$400 / month',
+        studentLimit: 'Up to 500 students',
+        accent: 'professional',
+        features: [
+          'Everything in Starter',
+          'Online payments with CMI or Stripe',
+          'Transport GPS tracking and activities booking',
+          'Digital contracts, complaints, and WhatsApp integration',
+          'Priority support'
+        ]
+      }),
+      tier({
+        id: 'tier-premium',
+        name: 'Premium',
+        priceLabel: '$700 / month',
+        studentLimit: 'Unlimited students',
+        accent: 'premium',
+        features: [
+          'Everything in Professional',
+          'White label and custom domain',
+          'API integrations',
+          'Advanced analytics and AI insights',
+          'Dedicated account manager and custom feature development'
+        ]
+      }),
+      tier({
+        id: 'tier-enterprise',
+        name: 'Enterprise',
+        priceLabel: 'Custom pricing',
+        studentLimit: 'Multi-campus and school groups',
+        accent: 'enterprise',
+        features: [
+          'On-premise deployment option',
+          'SLA guarantee',
+          'Custom integrations',
+          'Complex governance and rollout support'
+        ]
+      })
+    ],
+    addons: [
+      addon({ id: 'addon-sms', name: 'SMS Pack', priceLabel: '$50 / 5,000 SMS', detail: 'Operational outreach for billing, attendance, and urgent notices.' }),
+      addon({ id: 'addon-whatsapp', name: 'WhatsApp Pack', priceLabel: '$80 / month', detail: 'Dedicated WhatsApp workflows for high-response family communication.' }),
+      addon({ id: 'addon-storage', name: 'Extra storage', priceLabel: '$20 / month per 50GB', detail: 'Additional encrypted storage for documents, reports, and media.' }),
+      addon({ id: 'addon-training', name: 'Training session', priceLabel: '$300 one-time', detail: 'Live onboarding session for leadership, finance, or service teams.' }),
+      addon({ id: 'addon-migration', name: 'Data migration', priceLabel: '$500 one-time', detail: 'Migration support for records, families, and billing history.' })
+    ]
+  }
 }
 
 export const superAdminPanelById: Record<string, SuperAdminPanelRecord> = {

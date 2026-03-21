@@ -45,6 +45,12 @@ function statusClass(item: SchoolAdminEntityRecord) {
   if (/enabled|healthy|ready|completed|top performer|highly engaged|healthy profile/i.test(item.status)) return 'status-pill status-pill--neutral'
   return 'status-pill'
 }
+
+function securityStatusClass(status: string) {
+  if (/enforced|protected|compliant|healthy|enabled|live|ready/i.test(status)) return 'status-pill'
+  if (/scheduled|reviewed|active|streaming/i.test(status)) return 'status-pill status-pill--neutral'
+  return 'status-pill status-pill--warning'
+}
 </script>
 
 <template>
@@ -581,6 +587,73 @@ function statusClass(item: SchoolAdminEntityRecord) {
         </div>
       </section>
     </section>
+
+    <section class="section-block">
+      <div class="section-copy">
+        <p class="eyebrow">15.1 Security and privacy operations</p>
+        <h2>Compliance, identity, and resilience in one school view</h2>
+        <p>Module 15 keeps security posture visible for daily admin work, from two-factor coverage to parental consent, deletion requests, audit logging, and backup readiness.</p>
+      </div>
+      <div class="stat-grid stat-grid--four">
+        <article v-for="stat in props.viewModel.securityPrivacy.stats" :key="stat.label" class="stat-card stat-card--showcase">
+          <p class="eyebrow">{{ stat.label }}</p>
+          <h3>{{ stat.value }}</h3>
+          <p>{{ stat.detail }}</p>
+        </article>
+      </div>
+      <div class="security-grid" style="margin-top: 18px;">
+        <article v-for="item in props.viewModel.securityPrivacy.controls" :key="item.id" class="panel-card panel-card--inner panel-card--soft">
+          <div class="list-card__header">
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.detail }}</p>
+            </div>
+            <span :class="securityStatusClass(item.status)">{{ item.status }}</span>
+          </div>
+          <small>{{ item.meta }}</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="two-column two-column--balanced">
+      <section class="panel-card">
+        <div class="section-copy">
+          <p class="eyebrow">15.2 Privacy requests and consent</p>
+          <h2>Keep family rights operational</h2>
+          <p>Consent history, deletion requests, and analytics anonymization are managed as living service workflows instead of policy documents that nobody sees.</p>
+        </div>
+        <div class="stack stack--compact">
+          <article v-for="item in props.viewModel.securityPrivacy.compliance" :key="item.id" class="list-card">
+            <div class="list-card__header">
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.detail }}</p>
+              </div>
+              <span :class="securityStatusClass(item.status)">{{ item.status }}</span>
+            </div>
+            <small>{{ item.meta }}</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-copy">
+          <p class="eyebrow">15.3 Audit and resilience</p>
+          <h2>Security proof, backups, and hosting readiness</h2>
+          <p>The school can see which controls prove accountability and which resilience checks protect families if something goes wrong.</p>
+        </div>
+        <div class="stack stack--compact">
+          <article v-for="item in props.viewModel.securityPrivacy.resilience" :key="item.id" class="alert-item alert-item--calm">
+            <div class="alert-item__icon">i</div>
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.detail }}</p>
+              <small>{{ item.status }} | {{ item.meta }}</small>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
   </div>
 </template>
 
@@ -601,6 +674,12 @@ function statusClass(item: SchoolAdminEntityRecord) {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.security-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
 
 .forecast-value {

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { motion } from 'motion-v'
-import type { SuperAdminAnnouncementRecord, SuperAdminHealthRecord, SuperAdminPanelView, SuperAdminSupportTicketRecord, SuperAdminSubscriptionRecord } from '~/shared/app/types'
+import type {
+  MonetizationTierRecord,
+  SecurityPrivacyRecord,
+  SuperAdminAnnouncementRecord,
+  SuperAdminHealthRecord,
+  SuperAdminPanelView,
+  SuperAdminSupportTicketRecord,
+  SuperAdminSubscriptionRecord
+} from '~/shared/app/types'
 
 const props = defineProps<{
   viewModel: SuperAdminPanelView
@@ -48,6 +56,19 @@ function announcementClass(item: SuperAdminAnnouncementRecord) {
   if (item.status === 'scheduled') return 'status-pill status-pill--warning'
   if (item.status === 'draft') return 'status-pill status-pill--neutral'
   return 'status-pill'
+}
+
+function securityClass(item: SecurityPrivacyRecord) {
+  if (/enforced|protected|compliant|healthy|enabled|operational/i.test(item.status)) return 'status-pill'
+  if (/scheduled|available|reviewed|active|streaming/i.test(item.status)) return 'status-pill status-pill--neutral'
+  return 'status-pill status-pill--warning'
+}
+
+function tierClass(item: MonetizationTierRecord) {
+  if (item.accent === 'premium') return 'pricing-card pricing-card--premium'
+  if (item.accent === 'professional') return 'pricing-card pricing-card--professional'
+  if (item.accent === 'enterprise') return 'pricing-card pricing-card--enterprise'
+  return 'pricing-card pricing-card--starter'
 }
 
 function stageLabel(stage: string) {
@@ -361,6 +382,118 @@ function stageClass(stage: string) {
         </article>
       </div>
     </section>
+
+    <section class="section-block">
+      <div class="section-copy">
+        <p class="eyebrow">15.1 Platform security and privacy</p>
+        <h2>Security posture across every school</h2>
+        <p>Module 15 turns security and privacy into an operating surface for the platform owner, with visible controls for identity, compliance, auditability, backups, hosting, and annual testing.</p>
+      </div>
+      <div class="stat-grid stat-grid--four">
+        <article v-for="stat in props.viewModel.securityPrivacy.stats" :key="stat.label" class="stat-card stat-card--showcase">
+          <p class="eyebrow">{{ stat.label }}</p>
+          <h3>{{ stat.value }}</h3>
+          <p>{{ stat.detail }}</p>
+        </article>
+      </div>
+      <div class="security-grid" style="margin-top: 18px;">
+        <section class="panel-card panel-card--inner panel-card--soft">
+          <div class="section-copy section-copy--tight">
+            <p class="eyebrow">Identity and access</p>
+            <h3>Encryption, 2FA, sessions, and RBAC</h3>
+          </div>
+          <div class="stack stack--compact">
+            <article v-for="item in props.viewModel.securityPrivacy.controls" :key="item.id" class="list-card">
+              <div class="list-card__header">
+                <div>
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.detail }}</p>
+                </div>
+                <span :class="securityClass(item)">{{ item.status }}</span>
+              </div>
+              <small>{{ item.meta }}</small>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel-card panel-card--inner panel-card--soft">
+          <div class="section-copy section-copy--tight">
+            <p class="eyebrow">Compliance and family rights</p>
+            <h3>Residency, deletion, consent, and anonymization</h3>
+          </div>
+          <div class="stack stack--compact">
+            <article v-for="item in props.viewModel.securityPrivacy.compliance" :key="item.id" class="list-card">
+              <div class="list-card__header">
+                <div>
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.detail }}</p>
+                </div>
+                <span :class="securityClass(item)">{{ item.status }}</span>
+              </div>
+              <small>{{ item.meta }}</small>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel-card panel-card--inner panel-card--soft">
+          <div class="section-copy section-copy--tight">
+            <p class="eyebrow">Resilience and assurance</p>
+            <h3>Audit logs, backups, pentests, and TLS</h3>
+          </div>
+          <div class="stack stack--compact">
+            <article v-for="item in props.viewModel.securityPrivacy.resilience" :key="item.id" class="list-card">
+              <div class="list-card__header">
+                <div>
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.detail }}</p>
+                </div>
+                <span :class="securityClass(item)">{{ item.status }}</span>
+              </div>
+              <small>{{ item.meta }}</small>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-copy">
+        <p class="eyebrow">15.2 Monetization model</p>
+        <h2>Plans, add-ons, and enterprise packaging</h2>
+        <p>The pricing architecture is now visible in the owner workspace so sales, onboarding, and support all work from the same packaging model.</p>
+      </div>
+      <div class="pricing-grid">
+        <article v-for="item in props.viewModel.monetization.tiers" :key="item.id" :class="tierClass(item)">
+          <div class="pricing-card__header">
+            <div>
+              <p class="eyebrow">{{ item.studentLimit }}</p>
+              <h3>{{ item.name }}</h3>
+            </div>
+            <strong>{{ item.priceLabel }}</strong>
+          </div>
+          <div class="priority-list">
+            <article v-for="feature in item.features" :key="feature" class="priority-card">
+              <p>{{ feature }}</p>
+            </article>
+          </div>
+        </article>
+      </div>
+      <div class="section-copy section-copy--tight" style="margin-top: 18px;">
+        <p class="eyebrow">Add-ons</p>
+        <h3>Expansion revenue levers</h3>
+      </div>
+      <div class="addon-grid">
+        <article v-for="item in props.viewModel.monetization.addons" :key="item.id" class="panel-card panel-card--inner panel-card--soft">
+          <div class="list-card__header">
+            <div>
+              <h3>{{ item.name }}</h3>
+              <p>{{ item.detail }}</p>
+            </div>
+            <span class="status-pill status-pill--neutral">{{ item.priceLabel }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -370,7 +503,10 @@ function stageClass(stage: string) {
 }
 
 .school-grid,
-.white-label-grid {
+.white-label-grid,
+.security-grid,
+.pricing-grid,
+.addon-grid {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -388,5 +524,43 @@ function stageClass(stage: string) {
 .school-grid .panel-card,
 .white-label-grid .panel-card {
   height: 100%;
+}
+
+.pricing-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fffdf7 0%, #f8fafc 100%);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.pricing-card--starter {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%);
+}
+
+.pricing-card--professional {
+  background: linear-gradient(180deg, #f2fbff 0%, #e0f2fe 100%);
+}
+
+.pricing-card--premium {
+  background: linear-gradient(180deg, #fff8e8 0%, #fde68a 100%);
+}
+
+.pricing-card--enterprise {
+  background: linear-gradient(180deg, #f8fafc 0%, #e5e7eb 100%);
+}
+
+.pricing-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.pricing-card__header strong {
+  font-size: 1.1rem;
+  color: #0f172a;
 }
 </style>

@@ -1908,6 +1908,30 @@ export interface SchoolAdminSettingRecord {
   status: string
 }
 
+export interface SecurityPrivacyRecord {
+  id: string
+  title: string
+  detail: string
+  status: string
+  meta: string
+}
+
+export interface MonetizationTierRecord {
+  id: string
+  name: string
+  priceLabel: string
+  studentLimit: string
+  accent: 'starter' | 'professional' | 'premium' | 'enterprise'
+  features: string[]
+}
+
+export interface MonetizationAddonRecord {
+  id: string
+  name: string
+  priceLabel: string
+  detail: string
+}
+
 export interface SchoolAdminPanelRecord {
   dashboard: {
     heroStats: QuickStatView[]
@@ -1960,6 +1984,12 @@ export interface SchoolAdminPanelRecord {
     stats: QuickStatView[]
     items: SchoolAdminSettingRecord[]
   }
+  securityPrivacy: {
+    stats: QuickStatView[]
+    controls: SecurityPrivacyRecord[]
+    compliance: SecurityPrivacyRecord[]
+    resilience: SecurityPrivacyRecord[]
+  }
 }
 
 export interface SchoolAdminPanelView {
@@ -1985,6 +2015,7 @@ export interface SchoolAdminPanelView {
   communicationCenter: SchoolAdminPanelRecord['communicationCenter']
   reports: SchoolAdminPanelRecord['reports']
   settings: SchoolAdminPanelRecord['settings']
+  securityPrivacy: SchoolAdminPanelRecord['securityPrivacy']
 }
 
 export interface RoleWorkspaceView {
@@ -2136,6 +2167,16 @@ export interface SuperAdminPanelRecord {
   announcements: SuperAdminAnnouncementRecord[]
   whiteLabel: SuperAdminWhiteLabelRecord[]
   quickActions: SuperAdminActionRecord[]
+  securityPrivacy: {
+    stats: QuickStatView[]
+    controls: SecurityPrivacyRecord[]
+    compliance: SecurityPrivacyRecord[]
+    resilience: SecurityPrivacyRecord[]
+  }
+  monetization: {
+    tiers: MonetizationTierRecord[]
+    addons: MonetizationAddonRecord[]
+  }
 }
 
 export interface SuperAdminPanelView {
@@ -2158,5 +2199,7 @@ export interface SuperAdminPanelView {
   announcements: SuperAdminAnnouncementRecord[]
   whiteLabel: SuperAdminWhiteLabelRecord[]
   quickActions: SuperAdminActionRecord[]
+  securityPrivacy: SuperAdminPanelRecord['securityPrivacy']
+  monetization: SuperAdminPanelRecord['monetization']
 }
 

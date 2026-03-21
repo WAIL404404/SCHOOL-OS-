@@ -8,6 +8,7 @@ import type {
   SchoolAdminExportRecord,
   SchoolAdminForecastRecord,
   SchoolAdminPanelRecord,
+  SecurityPrivacyRecord,
   SchoolAdminSettingRecord,
   SchoolAdminTemplateRecord
 } from './types.ts'
@@ -46,6 +47,10 @@ function template(id: string, title: string, channel: SchoolAdminTemplateRecord[
 
 function setting(id: string, title: string, detail: string, status: string): SchoolAdminSettingRecord {
   return { id, title, detail, status }
+}
+
+function security(id: string, title: string, detail: string, status: string, meta: string): SecurityPrivacyRecord {
+  return { id, title, detail, status, meta }
 }
 
 const summitAdminPanel: SchoolAdminPanelRecord = {
@@ -228,6 +233,32 @@ const summitAdminPanel: SchoolAdminPanelRecord = {
       setting('admin-setting-5', 'Grading system configuration', 'Grade scales and reporting bands are aligned to school policy.', 'Reviewed'),
       setting('admin-setting-6', 'User roles and permissions', 'Admissions, finance, teachers, and leadership each have a scoped permission set.', 'Audit due'),
       setting('admin-setting-7', 'Integration settings', 'Calendar sync, accounting export, and messaging providers are connected and healthy.', 'Healthy')
+    ]
+  },
+  securityPrivacy: {
+    stats: [
+      stat('2FA coverage', '92%', 'Admin, finance, and supervisor roles enrolled in enforced two-factor access'),
+      stat('Audit events today', '18,204', 'Every sign-in, export, approval, and settings change is tracked'),
+      stat('Backup success', '100%', 'Nightly encrypted backups completed at 02:00 with restore checks'),
+      stat('Open privacy requests', '3', 'Deletion or consent requests waiting for school-side confirmation')
+    ],
+    controls: [
+      security('admin-security-1', 'End-to-end encryption', 'Sensitive parent messaging threads and signed documents are protected in transit and encrypted at rest in the document vault.', 'Enabled', 'Message vault and contracts covered'),
+      security('admin-security-2', 'Two-factor authentication', 'School leadership, finance, and support roles must confirm access with a second factor before entering operational screens.', 'Enforced', '92% enrolled, 8 accounts pending'),
+      security('admin-security-3', 'Session management and auto-logout', 'Idle sessions close automatically after 15 minutes, while device trust and session revocation remain visible to admins.', 'Active', 'Policy matches current timeout rules'),
+      security('admin-security-4', 'Role-based access control', 'Admissions, finance, teaching, transport, and leadership permissions are split so users only see the workflows they own.', 'Reviewed', '11 scoped policies live')
+    ],
+    compliance: [
+      security('admin-compliance-1', 'GDPR and Loi 09-08 readiness', 'Consent notices, access logs, and retention rules are versioned so the school can demonstrate lawful processing when audited.', 'Compliant', 'Next review Apr 2026'),
+      security('admin-compliance-2', 'Parental consent management', 'Media, analytics, medical, and trip consent states are stored per child and can be refreshed from the parent workspace.', 'Live', '401 households with current records'),
+      security('admin-compliance-3', 'Right to deletion workflow', 'Parents can request data removal, trigger a legal hold review, and receive a documented completion update within the service SLA.', 'Ready', '30-day resolution path'),
+      security('admin-compliance-4', 'Analytics anonymization', 'Student-facing analytics exports remove personal identifiers before leadership dashboards or board reports are generated.', 'Enabled', 'Applied to 8 report blocks')
+    ],
+    resilience: [
+      security('admin-resilience-1', 'Full audit log', 'Every action from login to document download is written to the audit ledger with actor, timestamp, and affected record.', 'Streaming', '18,204 events captured today'),
+      security('admin-resilience-2', 'Automated daily backups', 'Encrypted backups run nightly with retention, checksum validation, and a weekly restore simulation for core records.', 'Healthy', '35-day retention window'),
+      security('admin-resilience-3', 'Data residency and SSL/TLS', 'Primary hosting stays in Morocco with EU failover, and all school traffic is forced through HTTPS with modern TLS.', 'Protected', 'Morocco primary, EU standby'),
+      security('admin-resilience-4', 'Annual penetration testing', 'External penetration testing is scheduled each year, with findings tracked into owner remediation and school communication plans.', 'Scheduled', 'Next test Sep 2026')
     ]
   }
 }

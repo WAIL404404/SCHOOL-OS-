@@ -1301,6 +1301,12 @@ export function buildSchoolAdminPanelView(account: SeedUser | null, storage?: St
     settings: {
       stats: panel.settings.stats.map((item) => ({ ...item })),
       items: panel.settings.items.map((item) => ({ ...item }))
+    },
+    securityPrivacy: {
+      stats: panel.securityPrivacy.stats.map((item) => ({ ...item })),
+      controls: panel.securityPrivacy.controls.map((item) => ({ ...item })),
+      compliance: panel.securityPrivacy.compliance.map((item) => ({ ...item })),
+      resilience: panel.securityPrivacy.resilience.map((item) => ({ ...item }))
     }
   }
 }
@@ -1339,7 +1345,17 @@ export function buildSuperAdminPanelView(account: SeedUser | null, storage?: Sto
     featureFlags: panel.featureFlags.map((item) => ({ ...item })),
     announcements: panel.announcements.map((item) => ({ ...item })),
     whiteLabel: panel.whiteLabel.map((item) => ({ ...item })),
-    quickActions: panel.quickActions.map((item) => ({ ...item }))
+    quickActions: panel.quickActions.map((item) => ({ ...item })),
+    securityPrivacy: {
+      stats: panel.securityPrivacy.stats.map((item) => ({ ...item })),
+      controls: panel.securityPrivacy.controls.map((item) => ({ ...item })),
+      compliance: panel.securityPrivacy.compliance.map((item) => ({ ...item })),
+      resilience: panel.securityPrivacy.resilience.map((item) => ({ ...item }))
+    },
+    monetization: {
+      tiers: panel.monetization.tiers.map((item) => ({ ...item, features: [...item.features] })),
+      addons: panel.monetization.addons.map((item) => ({ ...item }))
+    }
   }
 }
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
