@@ -1,9 +1,14 @@
-﻿import { quickActionModules, ROLE_LABELS, schoolBrand } from './data.ts'
+﻿import { quickActionModules, ROLE_LABELS, platformBrand, schoolBrand } from './data.ts'
 import { childActivitiesById } from './activities.ts'
 import { childApprovalsById } from './approvals.ts'
+import { childComplaintsById } from './complaints.ts'
 import { childContractsById } from './contracts.ts'
 import { childFinanceById } from './finance.ts'
 import { childMessagesById } from './messages.ts'
+import { superAdminPanelById } from './super-admin.ts'
+import { schoolAdminPanelsById } from './school-admin.ts'
+import { schoolProfilesById } from './school-profile.ts'
+import { childSchoolLifeById } from './school-life.ts'
 import { childTransportById } from './transport.ts'
 import { listDevicesForAccount } from './session.ts'
 import type {
@@ -19,6 +24,8 @@ import type {
   ApprovalRequestRecord,
   ApprovalSignatureLogRecord,
   ChildRecord,
+  ComplaintCategory,
+  ComplaintModuleRecord,
   CommunicationAnnouncementRecord,
   CommunicationAppointmentRecord,
   CommunicationConversationRecord,
@@ -28,12 +35,20 @@ import type {
   ParentAccount,
   ParentActivitiesView,
   ParentApprovalsView,
+  ParentComplaintsView,
   ParentContractsView,
   ParentDashboardView,
   ParentFinancialView,
   ParentMessagesView,
+  SchoolAdminPanelView,
+  SuperAdminPanelView,
+  ParentSchoolLifeView,
+  ParentSchoolProfileView,
+  SchoolProfileRecord,
   ParentTransportView,
   RoleWorkspaceView,
+  SatisfactionSurveyAggregateView,
+  SatisfactionSurveySubmissionRecord,
   SeedUser,
   TransportPickupLogRecord,
   TransportRequestRecord,
@@ -869,6 +884,480 @@ export function buildParentMessagesView(account: SeedUser | null, selectedChildI
   }
 }
 
+const complaintCategoryLabels: Record<ComplaintCategory, string> = {
+  academic: 'Academic',
+  behavior: 'Behavior',
+  facilities: 'Facilities',
+  transport: 'Transport',
+  cantine_food: 'Cantine / Food',
+  safety_security: 'Safety & Security',
+  staff_behavior: 'Staff behavior',
+  other: 'Other'
+}
+
+function complaintStatusOrder(status: ComplaintModuleRecord['status']) {
+  if (status === 'reopened') return 0
+  if (status === 'in_progress') return 1
+  if (status === 'submitted') return 2
+  return 3
+}
+
+function complaintPriorityOrder(priority: ComplaintModuleRecord['priority']) {
+  if (priority === 'urgent') return 0
+  if (priority === 'high') return 1
+  if (priority === 'medium') return 2
+  return 3
+}
+
+function sortComplaints(items: ComplaintModuleRecord[]) {
+  return [...items].sort((left, right) => {
+    const statusDelta = complaintStatusOrder(left.status) - complaintStatusOrder(right.status)
+    if (statusDelta !== 0) return statusDelta
+    const priorityDelta = complaintPriorityOrder(left.priority) - complaintPriorityOrder(right.priority)
+    if (priorityDelta !== 0) return priorityDelta
+    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+  })
+}
+
+function buildSurveyAggregate(submissions: SatisfactionSurveySubmissionRecord[]): SatisfactionSurveyAggregateView {
+  const totalResponses = submissions.length
+  const anonymousResponses = submissions.filter((item) => item.anonymous).length
+  const npsTotal = submissions.reduce((sum, item) => sum + item.npsScore, 0)
+  const promoters = submissions.filter((item) => item.npsScore >= 9).length
+  const passives = submissions.filter((item) => item.npsScore >= 7 && item.npsScore <= 8).length
+  const detractors = submissions.filter((item) => item.npsScore <= 6).length
+  const averageNps = totalResponses > 0 ? Math.round((npsTotal / totalResponses) * 10) / 10 : 0
+  const npsScore = totalResponses > 0
+    ? Math.round(((promoters / totalResponses) * 100) - ((detractors / totalResponses) * 100))
+    : 0
+
+  const categoryAverages = Object.entries(complaintCategoryLabels).map(([category, label]) => {
+    const ratings = submissions.flatMap((item) => item.categoryRatings.filter((entry) => entry.category === category))
+    const averageScore = ratings.length > 0
+      ? Math.round(((ratings.reduce((sum, item) => sum + item.score, 0) / ratings.length) * 10)) / 10
+      : 0
+    return {
+      category: category as ComplaintCategory,
+      label,
+      averageScore
+    }
+  })
+
+  const latestSuggestions = [...submissions]
+    .sort((left, right) => new Date(right.submittedAt).getTime() - new Date(left.submittedAt).getTime())
+    .map((item) => item.suggestion?.trim() ?? '')
+    .filter((item) => item.length > 0)
+    .slice(0, 5)
+
+  return {
+    totalResponses,
+    anonymousResponses,
+    averageNps,
+    npsScore,
+    promoters,
+    passives,
+    detractors,
+    categoryAverages,
+    latestSuggestions
+  }
+}
+
+function averageResolutionHours(items: ComplaintModuleRecord[]) {
+  const resolved = items.filter((item) => item.status === 'resolved')
+  if (!resolved.length) return null
+  const totalHours = resolved.reduce((sum, item) => {
+    const delta = new Date(item.updatedAt).getTime() - new Date(item.createdAt).getTime()
+    return sum + Math.max(0, delta / (60 * 60 * 1000))
+  }, 0)
+  return Math.round((totalHours / resolved.length) * 10) / 10
+}
+
+export function buildParentComplaintsView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentComplaintsView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const records = activeChild ? childComplaintsById[activeChild.id] ?? null : null
+
+  const complaints = sortComplaints(records?.complaints ?? [])
+  const openCount = complaints.filter((item) => item.status !== 'resolved').length
+  const resolvedCount = complaints.filter((item) => item.status === 'resolved').length
+  const escalatedCount = complaints.filter((item) => item.escalation.escalated).length
+  const avgResolutionHours = averageResolutionHours(complaints)
+  const surveyAggregate = buildSurveyAggregate(records?.survey.submissions ?? [])
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && records
+      ? [
+          { label: 'Open complaints', value: String(openCount), detail: `${complaints.length} total complaint record(s)` },
+          { label: 'Escalated', value: String(escalatedCount), detail: 'Cases escalated after SLA threshold' },
+          { label: 'Resolved', value: String(resolvedCount), detail: avgResolutionHours === null ? 'Resolution timing pending' : `Avg ${avgResolutionHours.toFixed(1)}h to resolve` },
+          { label: 'Monthly NPS', value: `${surveyAggregate.npsScore}`, detail: `${surveyAggregate.totalResponses} survey response(s)` }
+        ]
+      : [
+          { label: 'Open complaints', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Escalated', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Resolved', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Monthly NPS', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    complaints: {
+      items: complaints,
+      openCount,
+      resolvedCount,
+      escalatedCount,
+      averageResolutionHours: avgResolutionHours
+    },
+    survey: {
+      monthLabel: records?.survey.monthLabel ?? 'No active month',
+      submissionWindow: records?.survey.submissionWindow ?? 'No submission window',
+      note: records?.survey.note ?? 'Survey aggregation becomes available once responses are submitted.',
+      submissionsCount: records?.survey.submissions.length ?? 0,
+      aggregate: surveyAggregate
+    }
+  }
+}
+
+export function buildParentSchoolLifeView(account: SeedUser | null, selectedChildId?: string | null, storage?: Storage | null): ParentSchoolLifeView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const children = parent?.children ?? []
+  const activeChild = children.find((child: ParentAccount['children'][number]) => child.id === selectedChildId) ?? children[0] ?? null
+  const records = activeChild ? childSchoolLifeById[activeChild.id] ?? null : null
+
+  const canteen = records?.canteen
+    ? {
+        weeklyMenu: records.canteen.weeklyMenu.map((item) => ({
+          ...item,
+          allergens: [...item.allergens],
+          dietTags: [...item.dietTags]
+        })),
+        balanceMad: records.canteen.balanceMad,
+        paymentHistory: records.canteen.paymentHistory.map((item) => ({ ...item })),
+        specialDietRequests: records.canteen.specialDietRequests.map((item) => ({ ...item })),
+        notes: records.canteen.notes
+      }
+    : {
+        weeklyMenu: [],
+        balanceMad: 0,
+        paymentHistory: [],
+        specialDietRequests: [],
+        notes: 'Canteen details will appear once a child is linked.'
+      }
+
+  const health = records?.health
+    ? {
+        bloodType: records.health.bloodType,
+        allergies: [...records.health.allergies],
+        chronicConditions: [...records.health.chronicConditions],
+        currentMedications: [...records.health.currentMedications],
+        vaccinations: records.health.vaccinations.map((item) => ({ ...item })),
+        emergencyContacts: records.health.emergencyContacts.map((item) => ({ ...item })),
+        incidents: records.health.incidents.map((item) => ({ ...item })),
+        visits: records.health.visits.map((item) => ({ ...item })),
+        recommendations: [...records.health.recommendations]
+      }
+    : {
+        bloodType: 'Pending',
+        allergies: [],
+        chronicConditions: [],
+        currentMedications: [],
+        vaccinations: [],
+        emergencyContacts: [],
+        incidents: [],
+        visits: [],
+        recommendations: ['Medical records will appear once a child is linked.']
+      }
+
+  const dailyReport: ParentSchoolLifeView['dailyReport'] = records?.dailyReport
+    ? {
+        sentAt: records.dailyReport.sentAt,
+        ate: records.dailyReport.ate,
+        mealAmount: records.dailyReport.mealAmount,
+        nap: records.dailyReport.nap,
+        napDuration: records.dailyReport.napDuration,
+        mood: records.dailyReport.mood,
+        activities: [...records.dailyReport.activities],
+        photos: records.dailyReport.photos.map((item) => ({ ...item })),
+        teacherComment: records.dailyReport.teacherComment,
+        diaperChanges: records.dailyReport.diaperChanges,
+        skills: records.dailyReport.skills.map((item) => ({ ...item }))
+      }
+    : {
+        sentAt: 'Waiting for the end-of-day report',
+        ate: false,
+        mealAmount: 'No report available',
+        nap: false,
+        napDuration: 'No report available',
+        mood: 'okay',
+        activities: [],
+        photos: [],
+        teacherComment: 'Daily report cards will appear here after school submits them.',
+        diaperChanges: null,
+        skills: []
+      }
+
+  const behavior = records?.behavior
+    ? {
+        points: records.behavior.points,
+        badges: records.behavior.badges.map((item) => ({ ...item })),
+        alerts: records.behavior.alerts.map((item) => ({ ...item })),
+        monthlyReports: records.behavior.monthlyReports.map((item) => ({ ...item })),
+        leaderboardEnabled: records.behavior.leaderboardEnabled,
+        leaderboard: records.behavior.leaderboard.map((item) => ({ ...item }))
+      }
+    : {
+        points: 0,
+        badges: [],
+        alerts: [],
+        monthlyReports: [],
+        leaderboardEnabled: false,
+        leaderboard: []
+      }
+
+  const events = records?.events
+    ? {
+        calendarLabel: records.events.calendarLabel,
+        volunteerNote: records.events.volunteerNote,
+        items: records.events.items.map((item) => ({
+          ...item,
+          media: item.media.map((asset) => ({ ...asset }))
+        }))
+      }
+    : {
+        calendarLabel: 'Event calendar pending',
+        volunteerNote: 'School events will appear here once a child is linked.',
+        items: []
+      }
+
+  const allergyCount = health.allergies.length
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: parent?.school ?? schoolBrand,
+    linkedSchools: parent?.linkedSchools ?? [parent?.school ?? schoolBrand],
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    hasChildren: children.length > 0,
+    activeChild,
+    activeChildId: activeChild?.id ?? null,
+    activeChildInitials: initialsFromName(activeChild?.fullName ?? 'Parent Student'),
+    childTabs: children.map((child: ParentAccount['children'][number]) => ({ id: child.id, fullName: child.fullName, gradeLabel: child.gradeLabel, schoolName: child.school?.name ?? parent?.school?.name ?? 'School', initials: initialsFromName(child.fullName), isActive: child.id === activeChild?.id })),
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: activeChild && records
+      ? [
+          { label: 'Canteen balance', value: formatMad(canteen.balanceMad), detail: `${canteen.paymentHistory.length} payment record(s)` },
+          { label: 'Health flags', value: `${allergyCount} allergy${allergyCount === 1 ? '' : 'ies'}`, detail: `${health.chronicConditions.length} chronic condition(s)` },
+          { label: 'Daily report', value: dailyReport.mood === 'happy' ? 'Happy' : dailyReport.mood === 'okay' ? 'Okay' : 'Sad', detail: `${dailyReport.ate ? 'ate lunch' : 'did not eat'} · ${dailyReport.nap ? 'napped' : 'no nap'}` },
+          { label: 'Behavior points', value: `${behavior.points} pts`, detail: `${behavior.badges.length} badge(s) earned` }
+        ]
+      : [
+          { label: 'Canteen balance', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Health flags', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Daily report', value: 'Unavailable', detail: 'No linked child yet' },
+          { label: 'Behavior points', value: 'Unavailable', detail: 'No linked child yet' }
+        ],
+    canteen,
+    health,
+    dailyReport,
+    behavior,
+    events
+  }
+}
+
+export function buildParentSchoolProfileView(account: SeedUser | null, selectedSchoolId?: string | null, storage?: Storage | null): ParentSchoolProfileView {
+  const parent = account?.role === 'parent' ? account as ParentAccount : null
+  const schools = parent?.linkedSchools ?? [parent?.school ?? schoolBrand]
+  const activeSchool = schools.find((school) => school.id === selectedSchoolId) ?? schools[0] ?? schoolBrand
+  const fallbackProfile = schoolProfilesById[schoolBrand.id]
+  if (!fallbackProfile) {
+    throw new Error('Missing default school profile seed')
+  }
+  const records: SchoolProfileRecord = schoolProfilesById[activeSchool.id] ?? fallbackProfile
+  const heroStats = records.successStats.slice(0, 4).map((item) => ({ label: item.label, value: item.value, detail: item.detail }))
+
+  return {
+    role: parent?.role ?? 'parent',
+    roleLabel: ROLE_LABELS[parent?.role ?? 'parent'],
+    school: activeSchool,
+    linkedSchools: schools,
+    displayName: parent?.profile?.displayName ?? 'Parent',
+    devices: parent ? listDevicesForAccount(parent, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    activeSchoolId: activeSchool.id,
+    schoolTabs: schools.map((school) => ({
+      id: school.id,
+      name: school.name,
+      campus: school.campus,
+      accent: school.accent,
+      isActive: school.id === activeSchool.id
+    })),
+    heroStats: heroStats.length > 0 ? heroStats : [
+      { label: 'Brand', value: 'Unavailable', detail: 'No school profile linked yet' },
+      { label: 'Calendar', value: 'Unavailable', detail: 'No term calendar available' },
+      { label: 'News', value: 'Unavailable', detail: 'No school news available' },
+      { label: 'Campus', value: 'Unavailable', detail: 'No campus profile available' }
+    ],
+    brand: records.brand,
+    mission: records.mission,
+    vision: records.vision,
+    values: records.values.map((item) => ({ ...item })),
+    certifications: records.certifications.map((item) => ({ ...item })),
+    successStats: records.successStats.map((item) => ({ ...item })),
+    testimonials: records.testimonials.map((item) => ({ ...item })),
+    socialLinks: records.socialLinks.map((item) => ({ ...item })),
+    gallery: records.gallery.map((item) => ({ ...item })),
+    staff: records.staff.map((item) => ({ ...item })),
+    calendar: {
+      termLabel: records.calendar.termLabel,
+      breaks: [...records.calendar.breaks],
+      items: records.calendar.items.map((item) => ({ ...item })),
+      downloads: records.calendar.downloads.map((item) => ({ ...item }))
+    },
+    news: records.news.map((item) => ({
+      ...item,
+      media: item.media.map((asset) => ({ ...asset })),
+      shareLinks: item.shareLinks.map((link) => ({ ...link }))
+    }))
+  }
+}
+
+export function buildSchoolAdminPanelView(account: SeedUser | null, storage?: Storage | null): SchoolAdminPanelView {
+  const admin = account?.role === 'school_admin' ? account : null
+  const fallbackPanel = schoolAdminPanelsById[schoolBrand.id]
+  if (!fallbackPanel) {
+    throw new Error('Missing default school admin panel seed')
+  }
+
+  const activeSchool = admin?.school ?? schoolBrand
+  const panel = schoolAdminPanelsById[activeSchool.id] ?? fallbackPanel
+
+  return {
+    role: admin?.role ?? 'school_admin',
+    roleLabel: ROLE_LABELS[admin?.role ?? 'school_admin'],
+    displayName: admin?.profile?.displayName ?? 'School Admin',
+    school: activeSchool,
+    devices: admin ? listDevicesForAccount(admin, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    dashboard: {
+      heroStats: panel.dashboard.heroStats.map((item) => ({ ...item })),
+      revenueThisMonthMad: panel.dashboard.revenueThisMonthMad,
+      revenueLastMonthMad: panel.dashboard.revenueLastMonthMad,
+      revenueDeltaLabel: panel.dashboard.revenueDeltaLabel,
+      upcomingEvents: panel.dashboard.upcomingEvents.map((item) => ({ ...item })),
+      quickActions: panel.dashboard.quickActions.map((item) => ({ ...item }))
+    },
+    studentManagement: {
+      stats: panel.studentManagement.stats.map((item) => ({ ...item })),
+      classes: panel.studentManagement.classes.map((item) => ({ ...item })),
+      students: panel.studentManagement.students.map((item) => ({ ...item })),
+      imports: panel.studentManagement.imports.map((item) => ({ ...item })),
+      documents: panel.studentManagement.documents.map((item) => ({ ...item }))
+    },
+    parentManagement: {
+      stats: panel.parentManagement.stats.map((item) => ({ ...item })),
+      parents: panel.parentManagement.parents.map((item) => ({ ...item })),
+      access: panel.parentManagement.access.map((item) => ({ ...item })),
+      communications: panel.parentManagement.communications.map((item) => ({ ...item })),
+      controls: panel.parentManagement.controls.map((item) => ({ ...item }))
+    },
+    teacherManagement: {
+      stats: panel.teacherManagement.stats.map((item) => ({ ...item })),
+      teachers: panel.teacherManagement.teachers.map((item) => ({ ...item })),
+      timetables: panel.teacherManagement.timetables.map((item) => ({ ...item }))
+    },
+    financialManagement: {
+      stats: panel.financialManagement.stats.map((item) => ({ ...item })),
+      outstanding: panel.financialManagement.outstanding.map((item) => ({ ...item })),
+      reminders: panel.financialManagement.reminders.map((item) => ({ ...item })),
+      exports: panel.financialManagement.exports.map((item) => ({ ...item })),
+      forecast: panel.financialManagement.forecast.map((item) => ({
+        ...item,
+        amountLabel: formatMad(item.amountMad)
+      })),
+      revenueThisMonth: formatMad(panel.dashboard.revenueThisMonthMad),
+      revenueLastMonth: formatMad(panel.dashboard.revenueLastMonthMad),
+      revenueDeltaLabel: panel.dashboard.revenueDeltaLabel
+    },
+    communicationCenter: {
+      stats: panel.communicationCenter.stats.map((item) => ({ ...item })),
+      announcements: panel.communicationCenter.announcements.map((item) => ({ ...item })),
+      approvals: panel.communicationCenter.approvals.map((item) => ({ ...item })),
+      templates: panel.communicationCenter.templates.map((item) => ({ ...item })),
+      scheduled: panel.communicationCenter.scheduled.map((item) => ({ ...item }))
+    },
+    reports: {
+      stats: panel.reports.stats.map((item) => ({ ...item })),
+      exports: panel.reports.exports.map((item) => ({ ...item })),
+      highlights: [...panel.reports.highlights],
+      builderBlocks: [...panel.reports.builderBlocks]
+    },
+    settings: {
+      stats: panel.settings.stats.map((item) => ({ ...item })),
+      items: panel.settings.items.map((item) => ({ ...item }))
+    },
+    securityPrivacy: {
+      stats: panel.securityPrivacy.stats.map((item) => ({ ...item })),
+      controls: panel.securityPrivacy.controls.map((item) => ({ ...item })),
+      compliance: panel.securityPrivacy.compliance.map((item) => ({ ...item })),
+      resilience: panel.securityPrivacy.resilience.map((item) => ({ ...item }))
+    }
+  }
+}
+
+export function buildSuperAdminPanelView(account: SeedUser | null, storage?: Storage | null): SuperAdminPanelView {
+  const admin = account?.role === 'super_admin' ? account : null
+  const fallbackPanel = superAdminPanelById[platformBrand.id]
+  if (!fallbackPanel) {
+    throw new Error('Missing default super admin panel seed')
+  }
+
+  const activeSchool = admin?.school ?? platformBrand
+  const panel = superAdminPanelById[activeSchool.id] ?? fallbackPanel
+
+  return {
+    role: admin?.role ?? 'super_admin',
+    roleLabel: ROLE_LABELS[admin?.role ?? 'super_admin'],
+    displayName: admin?.profile?.displayName ?? 'Super Admin',
+    school: activeSchool,
+    devices: admin ? listDevicesForAccount(admin, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: panel.heroStats.map((item) => ({ ...item })),
+    schools: panel.schools.map((item) => ({ ...item })),
+    revenue: panel.revenue.map((item) => ({ ...item })),
+    users: panel.users.map((item) => ({ ...item })),
+    churn: {
+      rate: panel.churn.rate,
+      retentionRate: panel.churn.retentionRate,
+      detail: panel.churn.detail,
+      history: panel.churn.history.map((item) => ({ ...item }))
+    },
+    featureUsage: panel.featureUsage.map((item) => ({ ...item })),
+    serverHealth: panel.serverHealth.map((item) => ({ ...item })),
+    supportTickets: panel.supportTickets.map((item) => ({ ...item })),
+    onboarding: panel.onboarding.map((item) => ({ ...item })),
+    subscriptions: panel.subscriptions.map((item) => ({ ...item })),
+    featureFlags: panel.featureFlags.map((item) => ({ ...item })),
+    announcements: panel.announcements.map((item) => ({ ...item })),
+    whiteLabel: panel.whiteLabel.map((item) => ({ ...item })),
+    quickActions: panel.quickActions.map((item) => ({ ...item })),
+    securityPrivacy: {
+      stats: panel.securityPrivacy.stats.map((item) => ({ ...item })),
+      controls: panel.securityPrivacy.controls.map((item) => ({ ...item })),
+      compliance: panel.securityPrivacy.compliance.map((item) => ({ ...item })),
+      resilience: panel.securityPrivacy.resilience.map((item) => ({ ...item }))
+    },
+    monetization: {
+      tiers: panel.monetization.tiers.map((item) => ({ ...item, features: [...item.features] })),
+      addons: panel.monetization.addons.map((item) => ({ ...item }))
+    }
+  }
+}
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
   const summary: WorkspaceSummary | undefined = account?.workspaceSummary
   return {
@@ -887,6 +1376,11 @@ export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Stora
     priorities: summary?.priorities ?? ['Define the first operational flow for this role.']
   }
 }
+
+
+
+
+
 
 
 

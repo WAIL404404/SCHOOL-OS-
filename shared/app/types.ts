@@ -1355,6 +1355,669 @@ export interface ParentMessagesView {
   }
 }
 
+export interface SchoolLifeWeeklyMenuItemRecord {
+  id: string
+  dayLabel: string
+  mealName: string
+  photoLabel: string
+  photoUrl: string
+  nutrition: string
+  allergens: string[]
+  dietTags: string[]
+  preselected: boolean
+  parentRating: number
+  childRating: number
+}
+
+export interface SchoolLifePaymentRecord {
+  id: string
+  label: string
+  postedAt: string
+  amountMad: number
+  method: string
+  status: 'paid' | 'pending' | 'blocked'
+  note: string
+}
+
+export interface SchoolLifeDietRequestRecord {
+  id: string
+  type: 'halal' | 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'nut_free' | 'custom'
+  status: 'submitted' | 'reviewing' | 'approved'
+  createdAt: string
+  detail: string
+}
+
+export interface SchoolLifeEmergencyContactRecord {
+  id: string
+  fullName: string
+  relationship: string
+  phone: string
+  priority: number
+}
+
+export interface SchoolLifeVaccinationRecord {
+  id: string
+  label: string
+  status: 'up_to_date' | 'due_soon' | 'missing'
+  updatedAt: string
+  note: string
+}
+
+export interface SchoolLifeHealthIncidentRecord {
+  id: string
+  occurredAt: string
+  title: string
+  whatHappened: string
+  actionTaken: string
+  pickupRequested: boolean
+  handledBy: string
+}
+
+export interface SchoolLifeMedicalVisitRecord {
+  id: string
+  visitedAt: string
+  reason: string
+  doctor: string
+  recommendation: string
+  followUpAt: string | null
+}
+
+export interface SchoolLifeMedicalFileRecord {
+  bloodType: string
+  allergies: string[]
+  chronicConditions: string[]
+  currentMedications: string[]
+  vaccinations: SchoolLifeVaccinationRecord[]
+  emergencyContacts: SchoolLifeEmergencyContactRecord[]
+  incidents: SchoolLifeHealthIncidentRecord[]
+  visits: SchoolLifeMedicalVisitRecord[]
+  recommendations: string[]
+}
+
+export interface SchoolLifeDailyPhotoRecord {
+  id: string
+  label: string
+  url: string
+  caption: string
+}
+
+export interface SchoolLifeSkillProgressRecord {
+  id: string
+  label: string
+  level: string
+  detail: string
+}
+
+export interface SchoolLifeDailyReportRecord {
+  sentAt: string
+  ate: boolean
+  mealAmount: string
+  nap: boolean
+  napDuration: string
+  mood: 'happy' | 'okay' | 'sad'
+  activities: string[]
+  photos: SchoolLifeDailyPhotoRecord[]
+  teacherComment: string
+  diaperChanges: number | null
+  skills: SchoolLifeSkillProgressRecord[]
+}
+
+export interface SchoolLifeBadgeRecord {
+  id: string
+  title: string
+  earnedAt: string
+  detail: string
+}
+
+export interface SchoolLifeBehaviorAlertRecord {
+  id: string
+  tone: 'warning' | 'info' | 'calm'
+  title: string
+  detail: string
+  context: string
+  createdAt: string
+}
+
+export interface SchoolLifeBehaviorMonthRecord {
+  id: string
+  monthLabel: string
+  points: number
+  positiveHighlights: string[]
+  improvementArea: string
+  leaderboardRank: number | null
+}
+
+export interface SchoolLifeLeaderboardRecord {
+  rank: number
+  name: string
+  points: number
+}
+
+export interface SchoolLifeEventMediaRecord {
+  id: string
+  kind: 'photo' | 'video'
+  label: string
+  url: string
+}
+
+export interface SchoolLifeEventRecord {
+  id: string
+  title: string
+  startsAt: string
+  endsAt: string
+  location: string
+  dressCode: string
+  description: string
+  rsvpStatus: 'going' | 'maybe' | 'not_going' | 'pending'
+  ticketStatus: 'available' | 'reserved' | 'sold_out'
+  requiresTicket: boolean
+  ticketPriceMad: number | null
+  volunteerSlots: number
+  volunteerSignedUp: boolean
+  media: SchoolLifeEventMediaRecord[]
+}
+
+export interface ChildSchoolLifeRecord {
+  canteen: {
+    weeklyMenu: SchoolLifeWeeklyMenuItemRecord[]
+    balanceMad: number
+    paymentHistory: SchoolLifePaymentRecord[]
+    specialDietRequests: SchoolLifeDietRequestRecord[]
+    notes: string
+  }
+  health: SchoolLifeMedicalFileRecord
+  dailyReport: SchoolLifeDailyReportRecord
+  behavior: {
+    points: number
+    badges: SchoolLifeBadgeRecord[]
+    alerts: SchoolLifeBehaviorAlertRecord[]
+    monthlyReports: SchoolLifeBehaviorMonthRecord[]
+    leaderboardEnabled: boolean
+    leaderboard: SchoolLifeLeaderboardRecord[]
+  }
+  events: {
+    calendarLabel: string
+    volunteerNote: string
+    items: SchoolLifeEventRecord[]
+  }
+}
+
+export interface ParentSchoolLifeView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  canteen: ChildSchoolLifeRecord['canteen']
+  health: ChildSchoolLifeRecord['health']
+  dailyReport: ChildSchoolLifeRecord['dailyReport']
+  behavior: ChildSchoolLifeRecord['behavior']
+  events: ChildSchoolLifeRecord['events']
+}
+
+export interface SchoolProfileGalleryItemRecord {
+  id: string
+  kind: 'photo' | 'virtual_tour'
+  label: string
+  caption: string
+  url: string
+}
+
+export interface SchoolProfileStaffRecord {
+  id: string
+  fullName: string
+  title: string
+  department: string
+  bio: string
+  specialties: string[]
+  photoUrl: string
+}
+
+export interface SchoolProfileValueRecord {
+  id: string
+  label: string
+  detail: string
+}
+
+export interface SchoolProfileCertificationRecord {
+  id: string
+  label: string
+  issuer: string
+  detail: string
+}
+
+export interface SchoolProfileSuccessStatRecord {
+  id: string
+  label: string
+  value: string
+  detail: string
+}
+
+export interface SchoolProfileTestimonialRecord {
+  id: string
+  parentName: string
+  relation: string
+  quote: string
+  rating: number
+}
+
+export interface SchoolProfileSocialLinkRecord {
+  id: string
+  platform: string
+  url: string
+}
+
+export interface SchoolProfileCalendarEventRecord {
+  id: string
+  kind: 'holiday' | 'exam' | 'event' | 'conference'
+  title: string
+  startsAt: string
+  endsAt: string
+  detail: string
+  accent: string
+}
+
+export interface SchoolProfileCalendarDownloadRecord {
+  id: string
+  label: string
+  kind: 'google' | 'apple' | 'ical' | 'pdf'
+  href: string
+}
+
+export interface SchoolProfileNewsMediaRecord {
+  id: string
+  kind: 'photo' | 'video'
+  label: string
+  url: string
+}
+
+export interface SchoolProfileNewsArticleRecord {
+  id: string
+  category: string
+  title: string
+  publishedAt: string
+  summary: string
+  body: string
+  media: SchoolProfileNewsMediaRecord[]
+  shareLinks: SchoolProfileSocialLinkRecord[]
+}
+
+export interface SchoolProfileBrandRecord {
+  logoUrl: string
+  primaryColor: string
+  secondaryColor: string
+  welcomeVideoUrl: string
+  welcomeVideoPosterUrl: string
+  slogan: string
+}
+
+export interface SchoolProfileRecord {
+  brand: SchoolProfileBrandRecord
+  mission: string
+  vision: string
+  values: SchoolProfileValueRecord[]
+  certifications: SchoolProfileCertificationRecord[]
+  successStats: SchoolProfileSuccessStatRecord[]
+  testimonials: SchoolProfileTestimonialRecord[]
+  socialLinks: SchoolProfileSocialLinkRecord[]
+  gallery: SchoolProfileGalleryItemRecord[]
+  staff: SchoolProfileStaffRecord[]
+  calendar: {
+    termLabel: string
+    breaks: string[]
+    items: SchoolProfileCalendarEventRecord[]
+    downloads: SchoolProfileCalendarDownloadRecord[]
+  }
+  news: SchoolProfileNewsArticleRecord[]
+}
+
+export interface SchoolProfileTabView {
+  id: string
+  name: string
+  campus: string
+  accent: string
+  isActive: boolean
+}
+
+export interface ParentSchoolProfileView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  devices: ViewDevice[]
+  activeSchoolId: string
+  schoolTabs: SchoolProfileTabView[]
+  heroStats: QuickStatView[]
+  brand: SchoolProfileBrandRecord
+  mission: string
+  vision: string
+  values: SchoolProfileValueRecord[]
+  certifications: SchoolProfileCertificationRecord[]
+  successStats: SchoolProfileSuccessStatRecord[]
+  testimonials: SchoolProfileTestimonialRecord[]
+  socialLinks: SchoolProfileSocialLinkRecord[]
+  gallery: SchoolProfileGalleryItemRecord[]
+  staff: SchoolProfileStaffRecord[]
+  calendar: SchoolProfileRecord['calendar']
+  news: SchoolProfileNewsArticleRecord[]
+}
+
+export type ComplaintCategory =
+  | 'academic'
+  | 'behavior'
+  | 'facilities'
+  | 'transport'
+  | 'cantine_food'
+  | 'safety_security'
+  | 'staff_behavior'
+  | 'other'
+
+export type ComplaintPriority = 'low' | 'medium' | 'high' | 'urgent'
+
+export type ComplaintStatus = 'submitted' | 'in_progress' | 'resolved' | 'reopened'
+
+export interface ComplaintModuleAttachmentRecord {
+  id: string
+  kind: 'image' | 'file' | 'pdf' | 'link'
+  label: string
+  url: string
+}
+
+export interface ComplaintStatusHistoryRecord {
+  id: string
+  status: ComplaintStatus
+  note: string
+  actor: 'parent' | 'school' | 'system'
+  createdAt: string
+}
+
+export interface ComplaintEscalationRecord {
+  thresholdDays: number
+  escalated: boolean
+  escalatedAt: string | null
+  detail: string
+}
+
+export interface ComplaintResolutionRatingRecord {
+  score: 1 | 2 | 3 | 4 | 5
+  note: string | null
+  ratedAt: string
+}
+
+export interface ComplaintModuleRecord {
+  id: string
+  childId: string
+  title: string
+  category: ComplaintCategory
+  description: string
+  priority: ComplaintPriority
+  anonymous: boolean
+  createdAt: string
+  updatedAt: string
+  status: ComplaintStatus
+  schoolResponse: string | null
+  estimatedResolutionAt: string | null
+  escalation: ComplaintEscalationRecord
+  attachments: ComplaintModuleAttachmentRecord[]
+  history: ComplaintStatusHistoryRecord[]
+  resolutionRating: ComplaintResolutionRatingRecord | null
+}
+
+export interface SatisfactionSurveyCategoryRatingRecord {
+  category: ComplaintCategory
+  label: string
+  score: 1 | 2 | 3 | 4 | 5
+}
+
+export interface SatisfactionSurveySubmissionRecord {
+  id: string
+  submittedAt: string
+  monthLabel: string
+  anonymous: boolean
+  npsScore: number
+  categoryRatings: SatisfactionSurveyCategoryRatingRecord[]
+  suggestion: string | null
+}
+
+export interface SatisfactionSurveyCategoryAggregateView {
+  category: ComplaintCategory
+  label: string
+  averageScore: number
+}
+
+export interface SatisfactionSurveyAggregateView {
+  totalResponses: number
+  anonymousResponses: number
+  averageNps: number
+  npsScore: number
+  promoters: number
+  passives: number
+  detractors: number
+  categoryAverages: SatisfactionSurveyCategoryAggregateView[]
+  latestSuggestions: string[]
+}
+
+export interface ChildComplaintsModuleRecord {
+  complaints: ComplaintModuleRecord[]
+  survey: {
+    monthLabel: string
+    submissionWindow: string
+    note: string
+    submissions: SatisfactionSurveySubmissionRecord[]
+  }
+}
+
+export interface ParentComplaintsView {
+  role: UserRole
+  roleLabel: string
+  school: SchoolBrand
+  linkedSchools: SchoolBrand[]
+  displayName: string
+  hasChildren: boolean
+  activeChild: ChildRecord | null
+  activeChildId: string | null
+  activeChildInitials: string
+  childTabs: ChildTabView[]
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  complaints: {
+    items: ComplaintModuleRecord[]
+    openCount: number
+    resolvedCount: number
+    escalatedCount: number
+    averageResolutionHours: number | null
+  }
+  survey: {
+    monthLabel: string
+    submissionWindow: string
+    note: string
+    submissionsCount: number
+    aggregate: SatisfactionSurveyAggregateView
+  }
+}
+
+export interface SchoolAdminActionRecord {
+  id: string
+  title: string
+  detail: string
+  ctaLabel: string
+}
+
+export interface SchoolAdminEventRecord {
+  id: string
+  title: string
+  startsAt: string
+  location: string
+  audience: string
+  detail: string
+}
+
+export interface SchoolAdminEntityRecord {
+  id: string
+  title: string
+  subtitle: string
+  detail: string
+  status: string
+  meta: string
+}
+
+export interface SchoolAdminClassRecord {
+  id: string
+  classLabel: string
+  homeroomTeacher: string
+  studentCount: number
+  attendanceRate: string
+  transferRequests: number
+}
+
+export interface SchoolAdminTemplateRecord {
+  id: string
+  title: string
+  channel: 'push' | 'email' | 'sms' | 'whatsapp' | 'in_app'
+  audience: string
+  lastUsedAt: string
+}
+
+export interface SchoolAdminExportRecord {
+  id: string
+  label: string
+  format: 'excel' | 'pdf' | 'csv' | 'ical' | 'api'
+  detail: string
+}
+
+export interface SchoolAdminForecastRecord {
+  id: string
+  label: string
+  amountMad: number
+  detail: string
+  confidence: 'high' | 'medium' | 'watch'
+}
+
+export interface SchoolAdminSettingRecord {
+  id: string
+  title: string
+  detail: string
+  status: string
+}
+
+export interface SecurityPrivacyRecord {
+  id: string
+  title: string
+  detail: string
+  status: string
+  meta: string
+}
+
+export interface MonetizationTierRecord {
+  id: string
+  name: string
+  priceLabel: string
+  studentLimit: string
+  accent: 'starter' | 'professional' | 'premium' | 'enterprise'
+  features: string[]
+}
+
+export interface MonetizationAddonRecord {
+  id: string
+  name: string
+  priceLabel: string
+  detail: string
+}
+
+export interface SchoolAdminPanelRecord {
+  dashboard: {
+    heroStats: QuickStatView[]
+    revenueThisMonthMad: number
+    revenueLastMonthMad: number
+    revenueDeltaLabel: string
+    upcomingEvents: SchoolAdminEventRecord[]
+    quickActions: SchoolAdminActionRecord[]
+  }
+  studentManagement: {
+    stats: QuickStatView[]
+    classes: SchoolAdminClassRecord[]
+    students: SchoolAdminEntityRecord[]
+    imports: SchoolAdminEntityRecord[]
+    documents: SchoolAdminEntityRecord[]
+  }
+  parentManagement: {
+    stats: QuickStatView[]
+    parents: SchoolAdminEntityRecord[]
+    access: SchoolAdminEntityRecord[]
+    communications: SchoolAdminEntityRecord[]
+    controls: SchoolAdminEntityRecord[]
+  }
+  teacherManagement: {
+    stats: QuickStatView[]
+    teachers: SchoolAdminEntityRecord[]
+    timetables: SchoolAdminEntityRecord[]
+  }
+  financialManagement: {
+    stats: QuickStatView[]
+    outstanding: SchoolAdminEntityRecord[]
+    reminders: SchoolAdminEntityRecord[]
+    exports: SchoolAdminExportRecord[]
+    forecast: SchoolAdminForecastRecord[]
+  }
+  communicationCenter: {
+    stats: QuickStatView[]
+    announcements: SchoolAdminEntityRecord[]
+    approvals: SchoolAdminEntityRecord[]
+    templates: SchoolAdminTemplateRecord[]
+    scheduled: SchoolAdminEntityRecord[]
+  }
+  reports: {
+    stats: QuickStatView[]
+    exports: SchoolAdminExportRecord[]
+    highlights: string[]
+    builderBlocks: string[]
+  }
+  settings: {
+    stats: QuickStatView[]
+    items: SchoolAdminSettingRecord[]
+  }
+  securityPrivacy: {
+    stats: QuickStatView[]
+    controls: SecurityPrivacyRecord[]
+    compliance: SecurityPrivacyRecord[]
+    resilience: SecurityPrivacyRecord[]
+  }
+}
+
+export interface SchoolAdminPanelView {
+  role: UserRole
+  roleLabel: string
+  displayName: string
+  school: SchoolBrand
+  devices: ViewDevice[]
+  dashboard: SchoolAdminPanelRecord['dashboard']
+  studentManagement: SchoolAdminPanelRecord['studentManagement']
+  parentManagement: SchoolAdminPanelRecord['parentManagement']
+  teacherManagement: SchoolAdminPanelRecord['teacherManagement']
+  financialManagement: {
+    stats: QuickStatView[]
+    outstanding: SchoolAdminEntityRecord[]
+    reminders: SchoolAdminEntityRecord[]
+    exports: SchoolAdminExportRecord[]
+    forecast: Array<SchoolAdminForecastRecord & { amountLabel: string }>
+    revenueThisMonth: string
+    revenueLastMonth: string
+    revenueDeltaLabel: string
+  }
+  communicationCenter: SchoolAdminPanelRecord['communicationCenter']
+  reports: SchoolAdminPanelRecord['reports']
+  settings: SchoolAdminPanelRecord['settings']
+  securityPrivacy: SchoolAdminPanelRecord['securityPrivacy']
+}
+
 export interface RoleWorkspaceView {
   role: UserRole
   roleLabel: string
@@ -1365,5 +2028,178 @@ export interface RoleWorkspaceView {
   devices: ViewDevice[]
   metrics: WorkspaceMetric[]
   priorities: string[]
+}
+
+export interface SuperAdminSchoolOverviewRecord {
+  id: string
+  schoolName: string
+  planName: string
+  revenueMad: number
+  activeUsers: number
+  churnRate: number
+  retentionRate: number
+  featureUsageRate: number
+  serverHealthLabel: string
+  supportTicketsOpen: number
+  onboardingStatus: string
+  billingStatus: string
+  whiteLabelStatus: string
+}
+
+export interface SuperAdminRevenueRecord {
+  id: string
+  schoolName: string
+  planName: string
+  revenueMad: number
+  deltaLabel: string
+  renewalDate: string
+}
+
+export interface SuperAdminUserRecord {
+  id: string
+  schoolName: string
+  activeUsers: number
+  totalUsers: number
+  activeParents: number
+  teachers: number
+  growthLabel: string
+}
+
+export interface SuperAdminChurnRecord {
+  label: string
+  rate: number
+  detail: string
+}
+
+export interface SuperAdminFeatureUsageRecord {
+  id: string
+  feature: string
+  adoptionRate: number
+  detail: string
+}
+
+export interface SuperAdminHealthRecord {
+  id: string
+  service: string
+  status: 'healthy' | 'warning' | 'degraded'
+  uptime: string
+  detail: string
+}
+
+export interface SuperAdminSupportTicketRecord {
+  id: string
+  schoolName: string
+  title: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'open' | 'in_progress' | 'waiting_school' | 'resolved'
+  assignedTo: string
+  updatedAt: string
+}
+
+export interface SuperAdminOnboardingRecord {
+  id: string
+  schoolName: string
+  stage: 'contract' | 'branding' | 'setup' | 'training' | 'launch'
+  progress: number
+  detail: string
+}
+
+export interface SuperAdminSubscriptionRecord {
+  id: string
+  schoolName: string
+  planName: string
+  status: 'active' | 'trial' | 'past_due' | 'cancelled'
+  amountMad: number
+  renewalDate: string
+  seats: number
+}
+
+export interface SuperAdminFeatureFlagRecord {
+  id: string
+  flag: string
+  enabledSchools: number
+  totalSchools: number
+  detail: string
+}
+
+export interface SuperAdminAnnouncementRecord {
+  id: string
+  title: string
+  audience: string
+  status: 'draft' | 'scheduled' | 'sent'
+  scheduledAt: string | null
+  detail: string
+}
+
+export interface SuperAdminWhiteLabelRecord {
+  id: string
+  schoolName: string
+  primaryColor: string
+  secondaryColor: string
+  domain: string
+  status: string
+}
+
+export interface SuperAdminActionRecord {
+  id: string
+  title: string
+  detail: string
+  ctaLabel: string
+}
+
+export interface SuperAdminPanelRecord {
+  heroStats: QuickStatView[]
+  schools: SuperAdminSchoolOverviewRecord[]
+  revenue: SuperAdminRevenueRecord[]
+  users: SuperAdminUserRecord[]
+  churn: {
+    rate: number
+    retentionRate: number
+    detail: string
+    history: SuperAdminChurnRecord[]
+  }
+  featureUsage: SuperAdminFeatureUsageRecord[]
+  serverHealth: SuperAdminHealthRecord[]
+  supportTickets: SuperAdminSupportTicketRecord[]
+  onboarding: SuperAdminOnboardingRecord[]
+  subscriptions: SuperAdminSubscriptionRecord[]
+  featureFlags: SuperAdminFeatureFlagRecord[]
+  announcements: SuperAdminAnnouncementRecord[]
+  whiteLabel: SuperAdminWhiteLabelRecord[]
+  quickActions: SuperAdminActionRecord[]
+  securityPrivacy: {
+    stats: QuickStatView[]
+    controls: SecurityPrivacyRecord[]
+    compliance: SecurityPrivacyRecord[]
+    resilience: SecurityPrivacyRecord[]
+  }
+  monetization: {
+    tiers: MonetizationTierRecord[]
+    addons: MonetizationAddonRecord[]
+  }
+}
+
+export interface SuperAdminPanelView {
+  role: UserRole
+  roleLabel: string
+  displayName: string
+  school: SchoolBrand
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  schools: SuperAdminSchoolOverviewRecord[]
+  revenue: SuperAdminRevenueRecord[]
+  users: SuperAdminUserRecord[]
+  churn: SuperAdminPanelRecord['churn']
+  featureUsage: SuperAdminFeatureUsageRecord[]
+  serverHealth: SuperAdminHealthRecord[]
+  supportTickets: SuperAdminSupportTicketRecord[]
+  onboarding: SuperAdminOnboardingRecord[]
+  subscriptions: SuperAdminSubscriptionRecord[]
+  featureFlags: SuperAdminFeatureFlagRecord[]
+  announcements: SuperAdminAnnouncementRecord[]
+  whiteLabel: SuperAdminWhiteLabelRecord[]
+  quickActions: SuperAdminActionRecord[]
+  securityPrivacy: SuperAdminPanelRecord['securityPrivacy']
+  monetization: SuperAdminPanelRecord['monetization']
 }
 
