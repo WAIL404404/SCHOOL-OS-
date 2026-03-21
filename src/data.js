@@ -52,7 +52,7 @@ export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const navigationByRole = {
   [USER_ROLES.superAdmin]: [
-    { label: "Overview", route: APP_ROUTES.superAdminOverview, description: "Platform-wide control" }
+    { label: "Control Center", route: APP_ROUTES.superAdminOverview, description: "All schools, billing, analytics, and platform operations" }
   ],
   [USER_ROLES.schoolAdmin]: [
     { label: "Admin Panel", route: APP_ROUTES.schoolAdminOverview, description: "Operations, finance, communication, and settings" }
@@ -229,17 +229,17 @@ const platformAdmin = {
     knownDevices: [device("device-platform-1", "MacBook Pro", "Casablanca", "2026-03-11T00:40:00.000Z")]
   }),
   workspaceSummary: {
-    title: "Portfolio oversight",
-    description: "Monitor partner schools, subscriptions, onboarding quality, and escalations from one layer.",
+    title: "Super admin control center",
+    description: "Track schools, revenue, subscriptions, feature flags, support, and onboarding from one platform dashboard.",
     metrics: [
-      { label: "Partner schools", value: "12", detail: "Active campuses on the platform" },
-      { label: "Health score", value: "96%", detail: "Service uptime and support resolution" },
-      { label: "Open escalations", value: "3", detail: "High-priority platform cases" }
+      { label: "All schools", value: "12", detail: "Active campuses on the platform" },
+      { label: "Revenue", value: "MAD 3.4M", detail: "This month across all plans" },
+      { label: "Open tickets", value: "14", detail: "Tickets in progress or waiting for school response" }
     ],
     priorities: [
-      "Review onboarding readiness for two new premium schools.",
-      "Validate subscription renewals due this week.",
-      "Track support response quality across all tenants."
+      "Approve the next onboarding batch for new partner schools.",
+      "Review subscription renewals and billing exceptions.",
+      "Audit feature flag rollout before the next release window."
     ]
   }
 };

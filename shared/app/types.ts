@@ -1999,3 +1999,164 @@ export interface RoleWorkspaceView {
   priorities: string[]
 }
 
+export interface SuperAdminSchoolOverviewRecord {
+  id: string
+  schoolName: string
+  planName: string
+  revenueMad: number
+  activeUsers: number
+  churnRate: number
+  retentionRate: number
+  featureUsageRate: number
+  serverHealthLabel: string
+  supportTicketsOpen: number
+  onboardingStatus: string
+  billingStatus: string
+  whiteLabelStatus: string
+}
+
+export interface SuperAdminRevenueRecord {
+  id: string
+  schoolName: string
+  planName: string
+  revenueMad: number
+  deltaLabel: string
+  renewalDate: string
+}
+
+export interface SuperAdminUserRecord {
+  id: string
+  schoolName: string
+  activeUsers: number
+  totalUsers: number
+  activeParents: number
+  teachers: number
+  growthLabel: string
+}
+
+export interface SuperAdminChurnRecord {
+  label: string
+  rate: number
+  detail: string
+}
+
+export interface SuperAdminFeatureUsageRecord {
+  id: string
+  feature: string
+  adoptionRate: number
+  detail: string
+}
+
+export interface SuperAdminHealthRecord {
+  id: string
+  service: string
+  status: 'healthy' | 'warning' | 'degraded'
+  uptime: string
+  detail: string
+}
+
+export interface SuperAdminSupportTicketRecord {
+  id: string
+  schoolName: string
+  title: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'open' | 'in_progress' | 'waiting_school' | 'resolved'
+  assignedTo: string
+  updatedAt: string
+}
+
+export interface SuperAdminOnboardingRecord {
+  id: string
+  schoolName: string
+  stage: 'contract' | 'branding' | 'setup' | 'training' | 'launch'
+  progress: number
+  detail: string
+}
+
+export interface SuperAdminSubscriptionRecord {
+  id: string
+  schoolName: string
+  planName: string
+  status: 'active' | 'trial' | 'past_due' | 'cancelled'
+  amountMad: number
+  renewalDate: string
+  seats: number
+}
+
+export interface SuperAdminFeatureFlagRecord {
+  id: string
+  flag: string
+  enabledSchools: number
+  totalSchools: number
+  detail: string
+}
+
+export interface SuperAdminAnnouncementRecord {
+  id: string
+  title: string
+  audience: string
+  status: 'draft' | 'scheduled' | 'sent'
+  scheduledAt: string | null
+  detail: string
+}
+
+export interface SuperAdminWhiteLabelRecord {
+  id: string
+  schoolName: string
+  primaryColor: string
+  secondaryColor: string
+  domain: string
+  status: string
+}
+
+export interface SuperAdminActionRecord {
+  id: string
+  title: string
+  detail: string
+  ctaLabel: string
+}
+
+export interface SuperAdminPanelRecord {
+  heroStats: QuickStatView[]
+  schools: SuperAdminSchoolOverviewRecord[]
+  revenue: SuperAdminRevenueRecord[]
+  users: SuperAdminUserRecord[]
+  churn: {
+    rate: number
+    retentionRate: number
+    detail: string
+    history: SuperAdminChurnRecord[]
+  }
+  featureUsage: SuperAdminFeatureUsageRecord[]
+  serverHealth: SuperAdminHealthRecord[]
+  supportTickets: SuperAdminSupportTicketRecord[]
+  onboarding: SuperAdminOnboardingRecord[]
+  subscriptions: SuperAdminSubscriptionRecord[]
+  featureFlags: SuperAdminFeatureFlagRecord[]
+  announcements: SuperAdminAnnouncementRecord[]
+  whiteLabel: SuperAdminWhiteLabelRecord[]
+  quickActions: SuperAdminActionRecord[]
+}
+
+export interface SuperAdminPanelView {
+  role: UserRole
+  roleLabel: string
+  displayName: string
+  school: SchoolBrand
+  devices: ViewDevice[]
+  heroStats: QuickStatView[]
+  schools: SuperAdminSchoolOverviewRecord[]
+  revenue: SuperAdminRevenueRecord[]
+  users: SuperAdminUserRecord[]
+  churn: SuperAdminPanelRecord['churn']
+  featureUsage: SuperAdminFeatureUsageRecord[]
+  serverHealth: SuperAdminHealthRecord[]
+  supportTickets: SuperAdminSupportTicketRecord[]
+  onboarding: SuperAdminOnboardingRecord[]
+  subscriptions: SuperAdminSubscriptionRecord[]
+  featureFlags: SuperAdminFeatureFlagRecord[]
+  announcements: SuperAdminAnnouncementRecord[]
+  whiteLabel: SuperAdminWhiteLabelRecord[]
+  quickActions: SuperAdminActionRecord[]
+}
+

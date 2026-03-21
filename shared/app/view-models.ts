@@ -1,10 +1,11 @@
-﻿import { quickActionModules, ROLE_LABELS, schoolBrand } from './data.ts'
+﻿import { quickActionModules, ROLE_LABELS, platformBrand, schoolBrand } from './data.ts'
 import { childActivitiesById } from './activities.ts'
 import { childApprovalsById } from './approvals.ts'
 import { childComplaintsById } from './complaints.ts'
 import { childContractsById } from './contracts.ts'
 import { childFinanceById } from './finance.ts'
 import { childMessagesById } from './messages.ts'
+import { superAdminPanelById } from './super-admin.ts'
 import { schoolAdminPanelsById } from './school-admin.ts'
 import { schoolProfilesById } from './school-profile.ts'
 import { childSchoolLifeById } from './school-life.ts'
@@ -40,6 +41,7 @@ import type {
   ParentFinancialView,
   ParentMessagesView,
   SchoolAdminPanelView,
+  SuperAdminPanelView,
   ParentSchoolLifeView,
   ParentSchoolProfileView,
   SchoolProfileRecord,
@@ -1303,6 +1305,43 @@ export function buildSchoolAdminPanelView(account: SeedUser | null, storage?: St
   }
 }
 
+export function buildSuperAdminPanelView(account: SeedUser | null, storage?: Storage | null): SuperAdminPanelView {
+  const admin = account?.role === 'super_admin' ? account : null
+  const fallbackPanel = superAdminPanelById[platformBrand.id]
+  if (!fallbackPanel) {
+    throw new Error('Missing default super admin panel seed')
+  }
+
+  const activeSchool = admin?.school ?? platformBrand
+  const panel = superAdminPanelById[activeSchool.id] ?? fallbackPanel
+
+  return {
+    role: admin?.role ?? 'super_admin',
+    roleLabel: ROLE_LABELS[admin?.role ?? 'super_admin'],
+    displayName: admin?.profile?.displayName ?? 'Super Admin',
+    school: activeSchool,
+    devices: admin ? listDevicesForAccount(admin, storage).map((device) => formatDevice(device)) as ViewDevice[] : [],
+    heroStats: panel.heroStats.map((item) => ({ ...item })),
+    schools: panel.schools.map((item) => ({ ...item })),
+    revenue: panel.revenue.map((item) => ({ ...item })),
+    users: panel.users.map((item) => ({ ...item })),
+    churn: {
+      rate: panel.churn.rate,
+      retentionRate: panel.churn.retentionRate,
+      detail: panel.churn.detail,
+      history: panel.churn.history.map((item) => ({ ...item }))
+    },
+    featureUsage: panel.featureUsage.map((item) => ({ ...item })),
+    serverHealth: panel.serverHealth.map((item) => ({ ...item })),
+    supportTickets: panel.supportTickets.map((item) => ({ ...item })),
+    onboarding: panel.onboarding.map((item) => ({ ...item })),
+    subscriptions: panel.subscriptions.map((item) => ({ ...item })),
+    featureFlags: panel.featureFlags.map((item) => ({ ...item })),
+    announcements: panel.announcements.map((item) => ({ ...item })),
+    whiteLabel: panel.whiteLabel.map((item) => ({ ...item })),
+    quickActions: panel.quickActions.map((item) => ({ ...item }))
+  }
+}
 export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Storage | null): RoleWorkspaceView {
   const summary: WorkspaceSummary | undefined = account?.workspaceSummary
   return {
@@ -1321,6 +1360,11 @@ export function buildRoleWorkspaceView(account: SeedUser | null, storage?: Stora
     priorities: summary?.priorities ?? ['Define the first operational flow for this role.']
   }
 }
+
+
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict'
 import { APP_ROUTES, seedParentAccounts, seedUsers } from '../shared/app/data.ts'
-import { buildParentAcademicsView, buildParentActivitiesView, buildParentApprovalsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView, buildParentMessagesView, buildParentSchoolLifeView, buildParentSchoolProfileView, buildParentTransportView, buildSchoolAdminPanelView } from '../shared/app/view-models.ts'
+import { buildParentAcademicsView, buildParentActivitiesView, buildParentApprovalsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView, buildParentMessagesView, buildParentSchoolLifeView, buildParentSchoolProfileView, buildParentTransportView, buildSchoolAdminPanelView, buildSuperAdminPanelView } from '../shared/app/view-models.ts'
 import { credentialLoginSchema } from '../shared/app/validation.ts'
 import { loginUser, resolveRoute } from '../shared/app/session.ts'
 
@@ -328,6 +328,29 @@ runTest('school admin panel falls back to default seeded data without a session'
   assert.equal(view.displayName, 'School Admin')
   assert.equal(view.school.name, 'Summit Private Academy')
   assert.equal(view.dashboard.quickActions[0]?.title, 'Add student')
+})
+
+runTest('super admin panel exposes portfolio, churn, support, and settings controls', () => {
+  const account = seedUsers.find((item) => item.role === 'super_admin') ?? null
+  const view = buildSuperAdminPanelView(account, new MemoryStorage())
+
+  assert.equal(view.role, 'super_admin')
+  assert.equal(view.heroStats[0].value, '12')
+  assert.equal(view.schools.length > 0, true)
+  assert.equal(view.revenue[0]?.schoolName, 'Summit Private Academy')
+  assert.equal(view.users[0]?.activeUsers, 2740)
+  assert.equal(view.churn.history.length, 3)
+  assert.equal(view.supportTickets.length > 0, true)
+  assert.equal(view.featureFlags.length > 0, true)
+  assert.equal(view.whiteLabel.length > 0, true)
+})
+
+runTest('super admin panel falls back to default platform data without a session', () => {
+  const view = buildSuperAdminPanelView(null, new MemoryStorage())
+
+  assert.equal(view.displayName, 'Super Admin')
+  assert.equal(view.school.name, 'School OS Platform')
+  assert.equal(view.quickActions[0]?.title, 'Onboard new school')
 })
 
 runTest('credential schema accepts current login shape', () => {
