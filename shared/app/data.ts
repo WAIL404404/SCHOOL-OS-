@@ -45,6 +45,9 @@ export const APP_ROUTES = {
   approvals: '/parent/approvals',
   afterSchool: '/parent/after-school',
   messages: '/parent/messages',
+  schoolLife: '/parent/school-life',
+  schoolProfile: '/parent/school-profile',
+  complaints: '/parent/complaints',
   driverOverview: '/transport-driver/overview',
   supervisorOverview: '/supervisor/overview'
 } as const
@@ -62,7 +65,7 @@ export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000
 
 export const navigationByRole: Record<(typeof USER_ROLES)[keyof typeof USER_ROLES], NavigationItem[]> = {
   [USER_ROLES.superAdmin]: [{ label: 'Overview', route: APP_ROUTES.superAdminOverview, description: 'Platform-wide control' }],
-  [USER_ROLES.schoolAdmin]: [{ label: 'Overview', route: APP_ROUTES.schoolAdminOverview, description: 'School operations' }],
+  [USER_ROLES.schoolAdmin]: [{ label: 'Admin Panel', route: APP_ROUTES.schoolAdminOverview, description: 'Operations, finance, communication, and settings' }],
   [USER_ROLES.teacher]: [{ label: 'Overview', route: APP_ROUTES.teacherOverview, description: 'Classroom pulse' }],
   [USER_ROLES.parent]: [
     { label: 'Dashboard', route: APP_ROUTES.parentDashboard, description: 'Today at a glance' },
@@ -73,7 +76,10 @@ export const navigationByRole: Record<(typeof USER_ROLES)[keyof typeof USER_ROLE
     { label: 'Transport', route: APP_ROUTES.transport, description: 'Live tracking, secure pickup, and transport requests' },
     { label: 'Approvals', route: APP_ROUTES.approvals, description: 'Permissions, digital signatures, reminders, and approval history' },
     { label: 'After-school', route: APP_ROUTES.afterSchool, description: 'Included in Activities module' },
-    { label: 'Messages', route: APP_ROUTES.messages, description: 'Direct messaging, announcements, meetings, WhatsApp, and notification controls' }
+    { label: 'Messages', route: APP_ROUTES.messages, description: 'Direct messaging, announcements, meetings, WhatsApp, and notification controls' },
+    { label: 'School Life', route: APP_ROUTES.schoolLife, description: 'Canteen, health, daily reports, behavior, and events' },
+    { label: 'School Profile', route: APP_ROUTES.schoolProfile, description: 'Premium branding, calendar, and school stories' },
+    { label: 'Complaints', route: APP_ROUTES.complaints, description: 'Submit complaints, track resolution, and answer satisfaction surveys' }
   ],
   [USER_ROLES.transportDriver]: [{ label: 'Overview', route: APP_ROUTES.driverOverview, description: 'Assigned routes' }],
   [USER_ROLES.supervisor]: [{ label: 'Overview', route: APP_ROUTES.supervisorOverview, description: 'Daily supervision' }]
@@ -86,7 +92,10 @@ export const quickActionModules: QuickActionModule[] = [
   { title: 'Transport', body: 'Watch route readiness and pickup confirmations.', route: APP_ROUTES.transport },
   { title: 'Approvals', body: 'Approve forms, outings, and important requests quickly.', route: APP_ROUTES.approvals },
   { title: 'After-school', body: 'Reserve premium care and enrichment sessions.', route: APP_ROUTES.afterSchool },
-  { title: 'VIP communication', body: 'Reach the school with prioritized parent messaging.', route: APP_ROUTES.messages }
+  { title: 'VIP communication', body: 'Reach the school with prioritized parent messaging.', route: APP_ROUTES.messages },
+  { title: 'School life', body: 'Track canteen, health, daily reports, behavior, and events.', route: APP_ROUTES.schoolLife },
+  { title: 'School profile', body: 'Explore branded pages, calendar exports, and school news.', route: APP_ROUTES.schoolProfile },
+  { title: 'Complaints and feedback', body: 'Submit reclamations, track school response, and rate outcomes.', route: APP_ROUTES.complaints }
 ]
 
 export const schoolBrand: SchoolBrand = { id: 'school-summit', code: 'SUMMIT', name: 'Summit Private Academy', campus: 'Rabat Riverside Campus', supportEmail: 'concierge@summitacademy.test', accent: 'Gold', greeting: "A calm overview of your child's school day" }
@@ -103,7 +112,7 @@ function baseUser<TRole extends SeedUser['role']>(payload: { id: string; role: T
 }
 
 const platformAdmin = { ...baseUser({ id: 'super-admin-wail', role: USER_ROLES.superAdmin, school: platformBrand, schoolCode: 'PLATFORM', email: 'owner@schoolos.test', password: 'Welcome123!', accessCode: 'PLATFORM-OWNER-9001', displayName: 'Wail Sebbar', recovery: { sms: '+212600000001', whatsapp: '+212600000001' }, biometricEnabled: true, knownDevices: [device('device-platform-1', 'MacBook Pro', 'Casablanca', '2026-03-11T00:40:00.000Z')], workspaceSummary: { title: 'Portfolio oversight', description: 'Monitor partner schools, subscriptions, onboarding quality, and escalations from one layer.', metrics: [{ label: 'Partner schools', value: '12', detail: 'Active campuses on the platform' }, { label: 'Health score', value: '96%', detail: 'Service uptime and support resolution' }, { label: 'Open escalations', value: '3', detail: 'High-priority platform cases' }], priorities: ['Review onboarding readiness for two new premium schools.', 'Validate subscription renewals due this week.', 'Track support response quality across all tenants.'] } }) }
-const schoolAdmin = { ...baseUser({ id: 'school-admin-sara', role: USER_ROLES.schoolAdmin, school: schoolBrand, schoolCode: 'SUMMIT', email: 'admin@summitacademy.test', password: 'Welcome123!', accessCode: 'SUMMIT-ADMIN-4401', displayName: 'Sara El Idrissi', recovery: { sms: '+212600000002', whatsapp: '+212600000002' }, biometricEnabled: true, knownDevices: [device('device-admin-1', 'Office Surface', 'Rabat', '2026-03-11T00:15:00.000Z')], workspaceSummary: { title: 'School operations hub', description: 'Coordinate admissions, parent service, classes, payments, and service quality for the school.', metrics: [{ label: 'Active families', value: '428', detail: 'Parents with active accounts' }, { label: 'Open approvals', value: '14', detail: 'Waiting for school-side validation' }, { label: 'Fee follow-ups', value: '9', detail: 'Families needing billing contact' }], priorities: ["Validate next week's activities communication.", 'Review unresolved parent complaints before Friday.', 'Confirm transport roster changes for Route North.'] } }) }
+const schoolAdmin = { ...baseUser({ id: 'school-admin-sara', role: USER_ROLES.schoolAdmin, school: schoolBrand, schoolCode: 'SUMMIT', email: 'admin@summitacademy.test', password: 'Welcome123!', accessCode: 'SUMMIT-ADMIN-4401', displayName: 'Sara El Idrissi', recovery: { sms: '+212600000002', whatsapp: '+212600000002' }, biometricEnabled: true, knownDevices: [device('device-admin-1', 'Office Surface', 'Rabat', '2026-03-11T00:15:00.000Z')], workspaceSummary: { title: 'School admin control center', description: 'Track enrollment, parent service, staffing, billing, communication, and reporting from one operational dashboard.', metrics: [{ label: 'Active parents', value: '428', detail: 'Parents with active accounts' }, { label: 'Collection rate', value: '94%', detail: 'Current billing cycle paid on time' }, { label: 'Open complaints', value: '7', detail: 'Items in active service recovery' }], priorities: ['Lock parent-teacher conference communication for tomorrow.', 'Resolve document vault gaps before the next admissions review.', 'Confirm finance reminder rules before the next invoice run.'] } }) }
 const teacher = { ...baseUser({ id: 'teacher-amine', role: USER_ROLES.teacher, school: schoolBrand, schoolCode: 'SUMMIT', email: 'amine.teacher@summitacademy.test', password: 'Welcome123!', accessCode: 'SUMMIT-TEACH-3301', displayName: 'Amine Jalal', recovery: { sms: '+212600000003', whatsapp: '+212600000003' }, knownDevices: [device('device-teacher-1', 'Teacher iPad', 'Rabat', '2026-03-10T21:40:00.000Z')], workspaceSummary: { title: 'Classroom pulse', description: 'Take attendance, publish updates, and keep the parent experience informed with the right signals.', metrics: [{ label: 'Classes today', value: '5', detail: 'Scheduled teaching blocks' }, { label: 'Attendance pending', value: '1', detail: 'Class register awaiting confirmation' }, { label: 'Parent updates', value: '7', detail: 'Weekly notes ready to publish' }], priorities: ['Post Grade 4 weekly learning highlights.', 'Resolve two missing attendance entries.', 'Prepare parent evening notes for Friday.'] } }) }
 
 const parentAccounts: ParentAccount[] = [

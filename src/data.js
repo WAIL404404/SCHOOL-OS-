@@ -33,6 +33,8 @@ export const APP_ROUTES = {
   approvals: "#/parent/approvals",
   afterSchool: "#/parent/after-school",
   messages: "#/parent/messages",
+  schoolLife: "#/parent/school-life",
+  schoolProfile: "#/parent/school-profile",
   driverOverview: "#/transport-driver/overview",
   supervisorOverview: "#/supervisor/overview"
 };
@@ -53,7 +55,7 @@ export const navigationByRole = {
     { label: "Overview", route: APP_ROUTES.superAdminOverview, description: "Platform-wide control" }
   ],
   [USER_ROLES.schoolAdmin]: [
-    { label: "Overview", route: APP_ROUTES.schoolAdminOverview, description: "School operations" }
+    { label: "Admin Panel", route: APP_ROUTES.schoolAdminOverview, description: "Operations, finance, communication, and settings" }
   ],
   [USER_ROLES.teacher]: [
     { label: "Overview", route: APP_ROUTES.teacherOverview, description: "Classroom pulse" }
@@ -66,7 +68,9 @@ export const navigationByRole = {
     { label: "Transport", route: APP_ROUTES.transport, description: "Coming soon" },
     { label: "Approvals", route: APP_ROUTES.approvals, description: "Coming soon" },
     { label: "After-school", route: APP_ROUTES.afterSchool, description: "Coming soon" },
-    { label: "Messages", route: APP_ROUTES.messages, description: "Coming soon" }
+    { label: "Messages", route: APP_ROUTES.messages, description: "Coming soon" },
+    { label: "School Life", route: APP_ROUTES.schoolLife, description: "Canteen, health, daily reports, behavior, and events" },
+    { label: "School Profile", route: APP_ROUTES.schoolProfile, description: "Premium branding, calendar, and school stories" }
   ],
   [USER_ROLES.transportDriver]: [
     { label: "Overview", route: APP_ROUTES.driverOverview, description: "Assigned routes" }
@@ -83,7 +87,9 @@ export const quickActionModules = [
   { title: "Transport", body: "Watch route readiness and pickup confirmations.", route: APP_ROUTES.transport },
   { title: "Approvals", body: "Approve forms, outings, and important requests quickly.", route: APP_ROUTES.approvals },
   { title: "After-school", body: "Reserve premium care and enrichment sessions.", route: APP_ROUTES.afterSchool },
-  { title: "VIP communication", body: "Reach the school with prioritized parent messaging.", route: APP_ROUTES.messages }
+  { title: "VIP communication", body: "Reach the school with prioritized parent messaging.", route: APP_ROUTES.messages },
+  { title: "School life", body: "Track canteen, health, daily reports, behavior, and events.", route: APP_ROUTES.schoolLife },
+  { title: "School profile", body: "Explore branded pages, calendar exports, and school news.", route: APP_ROUTES.schoolProfile }
 ];
 
 export const schoolBrand = {
@@ -253,17 +259,17 @@ const schoolAdmin = {
     knownDevices: [device("device-admin-1", "Office Surface", "Rabat", "2026-03-11T00:15:00.000Z")]
   }),
   workspaceSummary: {
-    title: "School operations hub",
-    description: "Coordinate admissions, parent service, classes, payments, and service quality for the school.",
+    title: "School admin control center",
+    description: "Track enrollment, parent service, staffing, billing, communication, and reporting from one operational dashboard.",
     metrics: [
-      { label: "Active families", value: "428", detail: "Parents with active accounts" },
-      { label: "Open approvals", value: "14", detail: "Waiting for school-side validation" },
-      { label: "Fee follow-ups", value: "9", detail: "Families needing billing contact" }
+      { label: "Active parents", value: "428", detail: "Parents with active accounts" },
+      { label: "Collection rate", value: "94%", detail: "Current billing cycle paid on time" },
+      { label: "Open complaints", value: "7", detail: "Items in active service recovery" }
     ],
     priorities: [
-      "Validate next week's activities communication.",
-      "Review unresolved parent complaints before Friday.",
-      "Confirm transport roster changes for Route North."
+      "Lock parent-teacher conference communication for tomorrow.",
+      "Resolve document vault gaps before the next admissions review.",
+      "Confirm finance reminder rules before the next invoice run."
     ]
   }
 };

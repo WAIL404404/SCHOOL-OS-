@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict'
 import { APP_ROUTES, seedParentAccounts, seedUsers } from '../shared/app/data.ts'
-import { buildParentAcademicsView, buildParentActivitiesView, buildParentApprovalsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView, buildParentMessagesView, buildParentTransportView } from '../shared/app/view-models.ts'
+import { buildParentAcademicsView, buildParentActivitiesView, buildParentApprovalsView, buildParentContractsView, buildParentDashboardView, buildParentFinancialView, buildParentMessagesView, buildParentSchoolLifeView, buildParentSchoolProfileView, buildParentTransportView, buildSchoolAdminPanelView } from '../shared/app/view-models.ts'
 import { credentialLoginSchema } from '../shared/app/validation.ts'
 import { loginUser, resolveRoute } from '../shared/app/session.ts'
 
@@ -265,6 +265,69 @@ runTest('messages view empty states stay stable', () => {
   assert.equal(view.heroStats[0].value, 'Unavailable')
   assert.equal(view.messaging.conversations.length, 0)
   assert.equal(view.announcements.items.length, 0)
+})
+
+runTest('school life view exposes canteen, health, reports, behavior, and events', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentSchoolLifeView(account, 'student-lina', new MemoryStorage())
+
+  assert.equal(view.activeChild?.fullName, 'Lina Bennani')
+  assert.equal(view.canteen.weeklyMenu.length, 5)
+  assert.equal(view.health.allergies[0], 'nuts')
+  assert.equal(view.dailyReport.photos.length > 0, true)
+  assert.equal(view.behavior.badges.length > 0, true)
+  assert.equal(view.events.items.length > 0, true)
+  assert.match(view.heroStats[0].value, /MAD/)
+})
+
+runTest('school life view empty states stay stable', () => {
+  const account = seedParentAccounts[2]
+  const view = buildParentSchoolLifeView(account, null, new MemoryStorage())
+
+  assert.equal(view.hasChildren, false)
+  assert.equal(view.heroStats[0].value, 'Unavailable')
+  assert.equal(view.canteen.weeklyMenu.length, 0)
+  assert.equal(view.events.items.length, 0)
+})
+
+runTest('school profile view exposes branding, calendar, and news', () => {
+  const account = seedParentAccounts[0]
+  const view = buildParentSchoolProfileView(account, 'school-atlas', new MemoryStorage())
+
+  assert.equal(view.activeSchoolId, 'school-atlas')
+  assert.equal(view.schoolTabs.length, 2)
+  assert.equal(view.brand.primaryColor, '#2563eb')
+  assert.equal(view.gallery.length > 0, true)
+  assert.equal(view.calendar.items.length > 0, true)
+  assert.equal(view.news.length > 0, true)
+})
+
+runTest('school profile view falls back to the default school when no session exists', () => {
+  const view = buildParentSchoolProfileView(null, null, new MemoryStorage())
+
+  assert.equal(view.school.name, 'Summit Private Academy')
+  assert.equal(view.heroStats[0].value, '98%')
+})
+
+runTest('school admin panel exposes dashboard, finance, and communication controls', () => {
+  const account = seedUsers.find((item) => item.role === 'school_admin') ?? null
+  const view = buildSchoolAdminPanelView(account, new MemoryStorage())
+
+  assert.equal(view.role, 'school_admin')
+  assert.equal(view.dashboard.heroStats[0].value, '612')
+  assert.equal(view.dashboard.upcomingEvents.length > 0, true)
+  assert.equal(view.studentManagement.classes[0]?.classLabel, 'Cedar Class')
+  assert.equal(view.financialManagement.forecast[0]?.amountLabel, 'MAD 702,000')
+  assert.equal(view.communicationCenter.templates.length > 0, true)
+  assert.equal(view.settings.items.length > 0, true)
+})
+
+runTest('school admin panel falls back to default seeded data without a session', () => {
+  const view = buildSchoolAdminPanelView(null, new MemoryStorage())
+
+  assert.equal(view.displayName, 'School Admin')
+  assert.equal(view.school.name, 'Summit Private Academy')
+  assert.equal(view.dashboard.quickActions[0]?.title, 'Add student')
 })
 
 runTest('credential schema accepts current login shape', () => {
